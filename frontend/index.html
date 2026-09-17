@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenoFest 2026 — Event Data Submission</title>
+<style>
+  :root {
+    --purple: #6A0DAD;
+    --purple-light: #8A2BE2;
+    --cyan: #0091EA;
+    --dark: #0d0d16;
+    --card: #16162a;
+    --border: #2a2a4a;
+    --text: #eaeaff;
+    --muted: #9a9acc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(1200px 600px at 20% -10%, #1c1140 0%, var(--dark) 55%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    width: 100%;
+    max-width: 620px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 36px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  h1 {
+    text-align: center;
+    font-size: 30px;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--purple-light), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+  }
+  .tag {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+  .tag .event-name { color: var(--cyan); font-weight: 600; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 6px; letter-spacing: .4px; }
+  input[type="text"], input[type="email"], input[type="url"], textarea, select {
+    width: 100%;
+    background: var(--dark);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--cyan); }
+  textarea { min-height: 100px; resize: vertical; }
+  .btn {
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(90deg, var(--purple-light), var(--cyan));
+    transition: filter .15s, transform .1s;
+  }
+  .btn:hover { filter: brightness(1.15); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { filter: grayscale(.8); cursor: not-allowed; }
+  .msg { display: none; margin-top: 16px; padding: 12px 14px; border-radius: 10px; font-size: 14px; }
+  .msg.error { display: block; background: rgba(244,67,54,.12); border: 1px solid #f44336; color: #ff8a80; }
+  .msg.success { display: block; background: rgba(76,175,80,.12); border: 1px solid #4caf50; color: #a5d6a7; }
+  .step { display: none; }
+  .step.active { display: block; }
+  .team-badge {
+    display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px;
+  }
+  .pill {
+    font-size: 12px; padding: 5px 12px; border-radius: 999px;
+    background: rgba(0,145,234,.12); border: 1px solid var(--cyan); color: var(--cyan);
+  }
+  .pill.purple { background: rgba(138,43,226,.14); border-color: var(--purple-light); color: var(--purple-light); }
+  .required-star { color: #ff8a80; }
+  .charcount { font-size: 11px; color: var(--muted); font-weight: 400; float: right; }
+  .charcount-full { color: #ff8a80; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>ZENOFEST 2026</h1>
+    <div class="tag">Event Data Submission</div>
+
+    <!-- Step 1: email -->
+    <section id="step-email" class="step active">
+      <label for="email">Registered Email Address</label>
+      <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+      <div class="msg" id="email-msg"></div>
+      <button class="btn" id="btn-verify">Verify My Registration</button>
+    </section>
+
+    <!-- Step 2: form -->
+    <section id="step-form" class="step">
+      <div class="tag">Event: <span class="event-name" id="team-event"></span></div>
+      <div class="team-badge" id="team-badges"></div>
+      <div id="form-fields"></div>
+      <div class="msg" id="form-msg"></div>
+      <button class="btn" id="btn-submit">Submit My Entry</button>
+    </section>
+
+    <!-- Step 3: success -->
+    <section id="step-success" class="step">
+      <div class="msg success" id="success-msg" style="display:block;"></div>
+      <button class="btn" id="btn-another" style="background: linear-gradient(90deg,#444,#666);">Submit for Another Team</button>
+    </section>
+  </div>
+
+<script src="config.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let currentTeam = null;
+  let eventFieldsCache = {};
+
+  function showStep(name) {
+    document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+    $("step-" + name).classList.add("active");
+  }
+  function spinner(btn, on) {
+    if (on) { btn.dataset.text = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Checking...'; btn.disabled = true; }
+    else { btn.innerHTML = btn.dataset.text || btn.textContent; btn.disabled = false; }
+  }
+
+  $("btn-verify").addEventListener("click", async () => {
+    const email = $("email").value.trim();
+    $("email-msg").className = "msg";
+    if (!email || !/.+@.+\..+/.test(email)) {
+      $("email-msg").textContent = "Enter a valid email address.";
+      $("email-msg").classList.add("error");
+      return;
+    }
+    spinner($("btn-verify"), true);
+    try {
+      const res = await fetch(API_BASE + "/api/validate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        $("email-msg").textContent = data.error || "Verification failed.";
+        $("email-msg").classList.add("error");
+        return;
+      }
+      currentTeam = { ...data.team, email };
+      buildForm(data.team, data.form_fields || []);
+      showStep("form");
+    } catch (err) {
+      $("email-msg").textContent = "Network error. Please try again.";
+      $("email-msg").classList.add("error");
+    } finally {
+      spinner($("btn-verify"), false);
+    }
+  });
+
+  function buildForm(team, fields) {
+    $("team-event").textContent = team.tech_event || "";
+    const badges = [];
+    if (team.team_id) badges.push(`<span class="pill purple">${team.team_id}</span>`);
+    if (team.team_name) badges.push(`<span class="pill">${team.team_name}</span>`);
+    if (team.college) badges.push(`<span class="pill">${team.college}</span>`);
+    $("team-badges").innerHTML = badges.join("");
+
+    const wrap = $("form-fields");
+    wrap.innerHTML = "";
+    fields.forEach(f => {
+      const label = `<label for="${f.name}">${f.label}${f.required ? ' <span class="required-star">*</span>' : ""}${f.max_length ? ` <span class="charcount" id="count-${f.name}"></span>` : ""}</label>`;
+      let input;
+      if (f.type === "textarea") {
+        input = `<textarea id="${f.name}" name="${f.name}" required="${f.required}"${f.max_length ? ` maxlength="${f.max_length}" oninput="updateCount('${f.name}', ${f.max_length})"` : ""}></textarea>`;
+      } else if (f.type === "select") {
+        const opts = (f.options || []).map(o => `<option value="${o}">${o}</option>`).join("");
+        input = `<select id="${f.name}" name="${f.name}">${opts}</select>`;
+      } else {
+        input = `<input type="${f.type === "url" ? "url" : "text"}" id="${f.name}" name="${f.name}" required="${f.required}">`;
+      }
+      wrap.insertAdjacentHTML("beforeend", label + input);
+    });
+    document.querySelectorAll("#form-fields textarea").forEach(t => {
+      const f = t.name;
+      t.dispatchEvent(new Event("input"));
+    });
+    $("form-msg").className = "msg";
+    $("form-msg").textContent = "";
+  }
+
+  function updateCount(name, max) {
+    const el = $(name); const span = $(`count-${name}`);
+    if (!span) return;
+    const chars = el.value.length;
+    span.textContent = `${chars} / ${max}`;
+    span.className = `charcount${chars >= max ? " charcount-full" : ""}`;
+  }
+
+  $("btn-submit").addEventListener("click", async () => {
+    if (!currentTeam) return;
+    const formData = {};
+    document.querySelectorAll("#form-fields [name]").forEach(el => {
+      formData[el.name] = el.value.trim();
+    });
+    $("form-msg").className = "msg";
+    const btn = $("btn-submit");
+    btn.innerHTML = '<span class="spinner"></span>Submitting...';
+    btn.disabled = true;
+    try {
+      const res = await fetch(API_BASE + "/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: currentTeam.email, team: currentTeam, form_data: formData })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        $("form-msg").textContent = data.error || "Submit failed.";
+        $("form-msg").classList.add("error");
+        return;
+      }
+      const docxNote = data.docx_status === "appended" ? "" : " Saved, but DOCX append failed.";
+      const mailNote = data.mail_status === "sent" ? " A confirmation PDF has been emailed to you." : "";
+      $("success-msg").textContent =
+        `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}`;
+      showStep("success");
+    } catch (err) {
+      $("form-msg").textContent = "Network error. Please try again.";
+      $("form-msg").classList.add("error");
+    } finally {
+      btn.innerHTML = "Submit My Entry";
+      btn.disabled = false;
+    }
+  });
+
+  $("btn-another").addEventListener("click", () => {
+    currentTeam = null;
+    $("email").value = "";
+    $("email-msg").className = "msg";
+    showStep("email");
+  });
+</script>
+</body>
+</html>

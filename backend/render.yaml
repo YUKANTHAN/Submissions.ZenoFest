@@ -1,0 +1,17 @@
+# Render free deployment config for the ZenoFest submission backend.
+# Deploy: push to GitHub -> connect repo -> "Web Service" -> selects this file.
+# Secrets are NOT committed; set them in the Render dashboard:
+#   GOOGLE_SERVICE_ACCOUNT_JSON, ORGANIZED_SHEET_ID, ORGANIZED_TAB_NAME,
+#   SUPABASE_URL, SUPABASE_ANON_KEY, DRIVE_FOLDER_ID, DRIVE_DOCX_FILE_ID
+services:
+  - type: web
+    name: zenofest-submissions
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      - key: GOOGLE_SERVICE_ACCOUNT_PATH
+        value: service_account.json
