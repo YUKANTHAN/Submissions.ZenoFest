@@ -51,7 +51,6 @@
     font-size: 13px;
     margin-bottom: 28px;
   }
-  .tag .event-name { color: var(--cyan); font-weight: 600; }
   label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 6px; letter-spacing: .4px; }
   input[type="text"], input[type="email"], input[type="url"], textarea, select {
     width: 100%;
@@ -87,9 +86,7 @@
   .msg.success { display: block; background: rgba(76,175,80,.12); border: 1px solid #4caf50; color: #a5d6a7; }
   .step { display: none; }
   .step.active { display: block; }
-  .team-badge {
-    display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px;
-  }
+  .team-badge { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 6px; }
   .pill {
     font-size: 12px; padding: 5px 12px; border-radius: 999px;
     background: rgba(0,145,234,.12); border: 1px solid var(--cyan); color: var(--cyan);
@@ -104,6 +101,39 @@
     border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 8px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .email-wrap { position: relative; }
+  .email-wrap input { padding-right: 100px; }
+  .verified-badge {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 12px; font-weight: 600; color: #4caf50;
+    display: none; pointer-events: none;
+  }
+  .verified-badge.show { display: inline-flex; align-items: center; gap: 4px; }
+  .verified-badge svg { width: 14px; height: 14px; }
+  .verified-badge.not-verified { color: #ff9800; }
+  .unauth-banner {
+    margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 13px;
+    background: rgba(255,152,0,.12); border: 1px solid #ff9800; color: #ffcc80; display: none;
+  }
+  .unauth-banner.show { display: block; }
+  .radio-group { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+  .radio-group label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); cursor: pointer; margin: 0; letter-spacing: 0; }
+  .radio-group input[type="radio"] { width: auto; accent-color: var(--cyan); }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    z-index: 100; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+    padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 24px 60px rgba(0,0,0,.7);
+  }
+  .modal h2 {
+    font-size: 20px; margin-bottom: 6px;
+    background: linear-gradient(90deg, var(--purple-light), var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .modal .tag { margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -111,84 +141,152 @@
     <h1>ZENOFEST 2026</h1>
     <div class="tag">Event Data Submission</div>
 
-    <!-- Step 1: email -->
-    <section id="step-email" class="step active">
-      <label for="email">Registered Email Address</label>
-      <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
-      <div class="msg" id="email-msg"></div>
-      <button class="btn" id="btn-verify">Verify My Registration</button>
-    </section>
+    <!-- Main form -->
+    <section id="step-form" class="step active">
+      <label for="email">Email Address</label>
+      <div class="email-wrap">
+        <input type="email" id="email" value="pgyukanthan@gmail.com" autocomplete="email">
+        <span class="verified-badge" id="verified-badge">
+          <svg id="verified-icon" viewBox="0 0 24 24" fill="#4caf50"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          <span id="verified-text">Verified</span>
+        </span>
+      </div>
+      <div class="unauth-banner show" id="unauth-note">Note: This email is not in our registration records. The submission will still be recorded and the organizer will be notified.</div>
 
-    <!-- Step 2: form -->
-    <section id="step-form" class="step">
-      <div class="tag">Event: <span class="event-name" id="team-event"></span></div>
+      <label for="event-pick">Tech Event</label>
+      <select id="event-pick"></select>
+
       <div class="team-badge" id="team-badges"></div>
       <div id="form-fields"></div>
       <div class="msg" id="form-msg"></div>
       <button class="btn" id="btn-submit">Submit My Entry</button>
     </section>
 
-    <!-- Step 3: success -->
+    <!-- Success -->
     <section id="step-success" class="step">
       <div class="msg success" id="success-msg" style="display:block;"></div>
       <button class="btn" id="btn-another" style="background: linear-gradient(90deg,#444,#666);">Submit for Another Team</button>
     </section>
   </div>
 
+  <!-- Unverified popup -->
+  <div class="modal-overlay" id="unauth-modal">
+    <div class="modal">
+      <h2>One more step</h2>
+      <div class="tag">Your email isn't in our records. Please provide your team details.</div>
+      <label for="input-team-name">Team Name <span class="required-star">*</span></label>
+      <input type="text" id="input-team-name" placeholder="Your team name">
+      <label for="input-leader-name">Leader Name <span class="required-star">*</span></label>
+      <input type="text" id="input-leader-name" placeholder="Leader's full name">
+      <label for="input-college">College <span class="required-star">*</span></label>
+      <input type="text" id="input-college" placeholder="Your college name">
+      <div class="msg" id="modal-msg"></div>
+      <button class="btn" id="btn-modal-submit">Confirm & Submit</button>
+      <button class="btn" id="btn-modal-cancel" style="background:linear-gradient(90deg,#444,#666);margin-top:10px;">Cancel</button>
+    </div>
+  </div>
+
 <script src="config.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   let currentTeam = null;
-  let eventFieldsCache = {};
+  let allEvents = {};
+  let verifiedTeam = null;
 
   function showStep(name) {
     document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
     $("step-" + name).classList.add("active");
   }
-  function spinner(btn, on) {
-    if (on) { btn.dataset.text = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Checking...'; btn.disabled = true; }
-    else { btn.innerHTML = btn.dataset.text || btn.textContent; btn.disabled = false; }
+
+  // Load events
+  (async () => {
+    try {
+      const res = await fetch(API_BASE + "/events");
+      allEvents = await res.json();
+      populateEventDropdown();
+      buildForm();
+    } catch (e) { console.error("Failed to load events", e); }
+  })();
+
+  function populateEventDropdown(preselect) {
+    const sel = $("event-pick");
+    sel.innerHTML = '<option value="">-- select event --</option>';
+    for (const ev of Object.keys(allEvents)) {
+      sel.insertAdjacentHTML("beforeend", `<option value="${ev}">${ev}</option>`);
+    }
+    if (preselect && allEvents[preselect]) {
+      sel.value = preselect;
+    } else if (Object.keys(allEvents).length === 1) {
+      sel.value = Object.keys(allEvents)[0];
+    }
   }
 
-  $("btn-verify").addEventListener("click", async () => {
+  // On email text change — validate in background, show verified/not-verified after API responds
+  let emailTimer = null;
+  $("email").addEventListener("input", async () => {
     const email = $("email").value.trim();
-    $("email-msg").className = "msg";
-    if (!email || !/.+@.+\..+/.test(email)) {
-      $("email-msg").textContent = "Enter a valid email address.";
-      $("email-msg").classList.add("error");
-      return;
-    }
-    spinner($("btn-verify"), true);
-    try {
-      const res = await fetch(API_BASE + "/api/validate-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        $("email-msg").textContent = data.error || "Verification failed.";
-        $("email-msg").classList.add("error");
-        return;
+    const badge = $("verified-badge");
+    const note = $("unauth-note");
+    verifiedTeam = null;
+    badge.classList.remove("show", "not-verified");
+    note.classList.remove("show");
+    $("team-badges").innerHTML = "";
+
+    if (!email || !/.+@.+\..+/.test(email)) return;
+
+    // Debounce — wait 400ms after user stops typing
+    clearTimeout(emailTimer);
+    emailTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(API_BASE + "/api/validate-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        badge.classList.add("show");
+        if (data.ok) {
+          verifiedTeam = data.team;
+          note.classList.remove("show");
+          $("verified-icon").setAttribute("fill", "#4caf50");
+          $("verified-text").textContent = "Verified";
+          badge.classList.remove("not-verified");
+          if (data.team.tech_event && allEvents[data.team.tech_event]) {
+            $("event-pick").value = data.team.tech_event;
+          }
+          const badges = [];
+          if (data.team.team_id) badges.push(`<span class="pill purple">${data.team.team_id}</span>`);
+          if (data.team.team_name) badges.push(`<span class="pill">${data.team.team_name}</span>`);
+          if (data.team.college) badges.push(`<span class="pill">${data.team.college}</span>`);
+          $("team-badges").innerHTML = badges.join("");
+        } else {
+          note.classList.add("show");
+          $("verified-icon").setAttribute("fill", "#ff9800");
+          $("verified-text").textContent = "Not Verified";
+          badge.classList.add("not-verified");
+          $("team-badges").innerHTML = "";
+        }
+      } catch (e) {
+        badge.classList.add("show");
+        note.classList.add("show");
+        $("verified-icon").setAttribute("fill", "#ff9800");
+        $("verified-text").textContent = "Not Verified";
+        badge.classList.add("not-verified");
+        $("team-badges").innerHTML = "";
       }
-      currentTeam = { ...data.team, email };
-      buildForm(data.team, data.form_fields || []);
-      showStep("form");
-    } catch (err) {
-      $("email-msg").textContent = "Network error. Please try again.";
-      $("email-msg").classList.add("error");
-    } finally {
-      spinner($("btn-verify"), false);
-    }
+    }, 400);
   });
 
-  function buildForm(team, fields) {
-    $("team-event").textContent = team.tech_event || "";
-    const badges = [];
-    if (team.team_id) badges.push(`<span class="pill purple">${team.team_id}</span>`);
-    if (team.team_name) badges.push(`<span class="pill">${team.team_name}</span>`);
-    if (team.college) badges.push(`<span class="pill">${team.college}</span>`);
-    $("team-badges").innerHTML = badges.join("");
+  // Event dropdown change — rebuild form fields
+  $("event-pick").addEventListener("change", () => {
+    buildForm();
+  });
+
+  function buildForm() {
+    const eventPick = $("event-pick").value;
+    const fields = allEvents[eventPick] || [];
+
+    if (currentTeam) currentTeam.tech_event = eventPick;
 
     const wrap = $("form-fields");
     wrap.innerHTML = "";
@@ -197,6 +295,9 @@
       let input;
       if (f.type === "textarea") {
         input = `<textarea id="${f.name}" name="${f.name}" required="${f.required}"${f.max_length ? ` maxlength="${f.max_length}" oninput="updateCount('${f.name}', ${f.max_length})"` : ""}></textarea>`;
+      } else if (f.type === "radio") {
+        const opts = (f.options || []).map((o, i) => `<label><input type="radio" name="${f.name}" value="${o}"${i === 0 ? " checked" : ""}> ${o}</label>`).join("");
+        input = `<div class="radio-group">${opts}</div>`;
       } else if (f.type === "select") {
         const opts = (f.options || []).map(o => `<option value="${o}">${o}</option>`).join("");
         input = `<select id="${f.name}" name="${f.name}">${opts}</select>`;
@@ -206,7 +307,6 @@
       wrap.insertAdjacentHTML("beforeend", label + input);
     });
     document.querySelectorAll("#form-fields textarea").forEach(t => {
-      const f = t.name;
       t.dispatchEvent(new Event("input"));
     });
     $("form-msg").className = "msg";
@@ -221,12 +321,66 @@
     span.className = `charcount${chars >= max ? " charcount-full" : ""}`;
   }
 
+  let pendingFormData = null;
+
   $("btn-submit").addEventListener("click", async () => {
-    if (!currentTeam) return;
+    const email = $("email").value.trim();
+    const eventPick = $("event-pick").value;
+
+    if (!email || !/.+@.+\..+/.test(email)) {
+      $("form-msg").textContent = "Enter a valid email address.";
+      $("form-msg").classList.add("error");
+      return;
+    }
+    if (!eventPick) {
+      $("form-msg").textContent = "Please select your tech event.";
+      $("form-msg").classList.add("error");
+      return;
+    }
+
     const formData = {};
     document.querySelectorAll("#form-fields [name]").forEach(el => {
+      if (el.type === "radio" && !el.checked) return;
       formData[el.name] = el.value.trim();
     });
+
+    // If not verified, show popup for team details
+    if (!verifiedTeam) {
+      pendingFormData = { email, eventPick, formData };
+      $("input-team-name").value = "";
+      $("input-leader-name").value = "";
+      $("input-college").value = "";
+      $("modal-msg").className = "msg";
+      $("unauth-modal").classList.add("show");
+      return;
+    }
+
+    await doSubmit(email, verifiedTeam, formData);
+  });
+
+  $("btn-modal-cancel").addEventListener("click", () => {
+    $("unauth-modal").classList.remove("show");
+    pendingFormData = null;
+  });
+
+  $("btn-modal-submit").addEventListener("click", async () => {
+    const teamName = $("input-team-name").value.trim();
+    const leaderName = $("input-leader-name").value.trim();
+    const college = $("input-college").value.trim();
+    const msg = $("modal-msg");
+    msg.className = "msg";
+    if (!teamName) { msg.textContent = "Enter your team name."; msg.classList.add("error"); return; }
+    if (!leaderName) { msg.textContent = "Enter leader name."; msg.classList.add("error"); return; }
+    if (!college) { msg.textContent = "Enter your college."; msg.classList.add("error"); return; }
+
+    $("unauth-modal").classList.remove("show");
+    const { email, eventPick, formData } = pendingFormData;
+    const team = { email, team_id: "ZF-UNREG", team_name: teamName, tech_event: eventPick, leader_name: leaderName, college };
+    pendingFormData = null;
+    await doSubmit(email, team, formData);
+  });
+
+  async function doSubmit(email, team, formData) {
     $("form-msg").className = "msg";
     const btn = $("btn-submit");
     btn.innerHTML = '<span class="spinner"></span>Submitting...';
@@ -235,7 +389,7 @@
       const res = await fetch(API_BASE + "/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: currentTeam.email, team: currentTeam, form_data: formData })
+        body: JSON.stringify({ email, team, form_data: formData, is_unverified: !verifiedTeam })
       });
       const data = await res.json();
       if (!data.ok) {
@@ -255,13 +409,19 @@
       btn.innerHTML = "Submit My Entry";
       btn.disabled = false;
     }
-  });
+  }
 
   $("btn-another").addEventListener("click", () => {
     currentTeam = null;
-    $("email").value = "";
-    $("email-msg").className = "msg";
-    showStep("email");
+    verifiedTeam = null;
+    pendingFormData = null;
+    $("email").value = "pgyukanthan@gmail.com";
+    $("form-msg").className = "msg";
+    $("team-badges").innerHTML = "";
+    $("email").dispatchEvent(new Event("input"));
+    populateEventDropdown();
+    buildForm();
+    showStep("form");
   });
 </script>
 </body>

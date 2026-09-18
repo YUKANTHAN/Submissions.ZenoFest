@@ -38,6 +38,11 @@ def index():
     return send_from_directory(FRONTEND_DIR, "index.html")
 
 
+@app.get("/<path:filename>")
+def static_files(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
+
+
 @app.get("/events")
 def event_fields():
     """Return all event form definitions (used by the frontend to render forms)."""
@@ -79,6 +84,7 @@ def submit():
     email = (body.get("email") or "").strip().lower()
     team = body.get("team") or {}
     form_data = body.get("form_data") or {}
+    is_unverified = body.get("is_unverified", False)
 
     if not email:
         return jsonify({"ok": False, "error": "Missing email"}), 400
@@ -175,6 +181,24 @@ def submit():
         except Exception as exc:
             app.logger.exception("email send failed")
             mail_status = f"failed: {exc}"
+
+    # 4) Notify organizer about unauthorized submissions.
+    if is_unverified and mailer.is_configured():
+        try:
+            labels = {f["name"]: f["label"] for f in fields}
+            mailer.send_unauthorized_notification(
+                submission_email=email,
+                team_id=team_id,
+                team_name=team_name,
+                tech_event=tech_event,
+                leader_name=leader_name,
+                college=college,
+                submitted_at=submitted_at,
+                form_data=form_data,
+                field_labels=labels,
+            )
+        except Exception as exc:
+            app.logger.exception("unauthorized notification failed")
 
     return jsonify({
         "ok": True,

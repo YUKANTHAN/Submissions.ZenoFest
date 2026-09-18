@@ -14,7 +14,7 @@ Add a new event by appending to EVENT_FIELDS:
 EVENT_FIELDS = {
     "Project Expo": [
         {"name": "project_title", "label": "Project Title", "type": "text", "required": True},
-        {"name": "development_domain", "label": "Development Domain", "type": "text", "required": True},
+        {"name": "development_domain", "label": "Development Domain", "type": "radio", "options": ["Software", "Hardware", "Hybrid (Hardware + Software)"], "required": True},
         {"name": "problem_statement", "label": "Problem Statement", "type": "textarea", "required": True, "max_length": 10000},
         {"name": "proposed_solution", "label": "Proposed Solution", "type": "textarea", "required": True, "max_length": 10000},
         {"name": "technologies_used", "label": "Technologies Used", "type": "text", "required": True},

@@ -106,3 +106,78 @@ def build_html(team, form_data, labels, submitted_at, team_id):
     </td></tr>
   </table>
 </div>"""
+
+
+def send_unauthorized_notification(submission_email, team_id, team_name, tech_event,
+                                   leader_name, college, submitted_at, form_data, field_labels):
+    """Notify the organizer about a submission from an unregistered email."""
+    if not is_configured():
+        return
+    rows = ""
+    for key, value in (form_data or {}).items():
+        label = field_labels.get(key, key.replace("_", " ").title())
+        rows += f"<tr><td style='padding:4px 12px 4px 0;color:#6A0DAD;font-weight:bold;font-size:13px;white-space:nowrap;'>{_esc(label)}</td><td style='padding:4px 0;color:#333;font-size:13px;'>{_esc(value)}</td></tr>"
+
+    html = f"""
+<div style="background-color:#f7f6f2;padding:32px 12px;font-family:Georgia,'Times New Roman',serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center">
+      <table role="presentation" width="500" cellpadding="0" cellspacing="0" border="0"
+             style="background:#ffffff;border-radius:8px;padding:34px 40px;">
+        <tr>
+          <td style="text-align:center;padding-bottom:22px;">
+            <div style="font-size:26px;font-weight:bold;color:#6A0DAD;letter-spacing:5px;">ZENOFEST</div>
+            <div style="font-size:13px;color:#9a9a9a;letter-spacing:8px;margin-top:4px;">2K26</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:6px;color:#ff5722;font-size:18px;font-weight:bold;">
+            ⚠ Unauthorized Submission Alert
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:18px;color:#444444;font-size:14px;line-height:1.75;">
+            A submission was received from an email <b>not found</b> in the registration records.
+            Details below:
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 18px;background:#fff3e0;border-left:3px solid #ff9800;border-radius:4px;
+                  margin:0 0 18px;font-size:14px;font-family:Arial,Helvetica,sans-serif;">
+            <b style="color:#e65100;">Email:</b> {_esc(submission_email)}<br/>
+            <b style="color:#e65100;">Event:</b> {_esc(tech_event)}<br/>
+            <b style="color:#e65100;">Submitted At:</b> {_esc(submitted_at)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0 6px;color:#333;font-size:14px;font-weight:bold;">Submission Data:</td>
+        </tr>
+        <tr>
+          <td>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                   style="width:100%;font-family:Arial,Helvetica,sans-serif;">
+              {rows}
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top:24px;border-top:1px solid #e8e5dd;color:#9a9a9a;font-size:11.5px;
+                  font-family:Arial,Helvetica,sans-serif;text-align:center;">
+            ZenoFest 2K26 — Unauthorized Submission Notification
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</div>"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"⚠ ZenoFest 2026 - Unauthorized Submission from {submission_email}"
+    msg["From"] = formataddr((MAIL_FROM_NAME, SMTP_USER))
+    msg["To"] = SMTP_USER
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
