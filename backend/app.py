@@ -116,7 +116,10 @@ def submit():
     college = team.get("college") or ""
     submitted_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    # 1) Save to Supabase.
+    # 1) Save to Supabase (optional — don't block the rest of the flow if it fails).
+    import uuid as _uuid
+    submission_id = str(_uuid.uuid4())
+    db_status = "saved"
     try:
         submission_id = supabase.submit_event_data(
             team_id=team_id,
@@ -126,8 +129,8 @@ def submit():
             form_data=form_data,
         )
     except Exception as exc:
-        app.logger.exception("supabase insert failed")
-        return jsonify({"ok": False, "error": "Could not save your submission. Please try again."}), 502
+        app.logger.exception("supabase insert failed (continuing without DB)")
+        db_status = f"failed: {exc}"
 
     # 2) Append to the branded DOCX on Drive.
     docx_error = None
@@ -204,6 +207,7 @@ def submit():
         "ok": True,
         "submission_id": submission_id,
         "submitted_at": submitted_at,
+        "db_status": db_status,
         "docx_status": "appended" if not docx_error else f"failed: {docx_error}",
         "mail_status": mail_status,
     }), 200
