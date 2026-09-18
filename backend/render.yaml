@@ -8,8 +8,8 @@ services:
     name: zenofest-submissions
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && python app.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.7
