@@ -1,46 +1,66 @@
 """
 Email sender for ZenoFest submission confirmations.
-Uses SMTP (Gmail recommended) with an App Password.
+Uses SendGrid HTTP API (works on Render free tier — SMTP is blocked).
 """
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from email.utils import formataddr
+import base64
+import json
+import urllib.request
+import urllib.error
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER", "")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
-MAIL_FROM_NAME = os.environ.get("MAIL_FROM_NAME", "ZenoFest 2K26")
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+MAIL_FROM_EMAIL = os.environ.get("MAIL_FROM_EMAIL", "pgyukanthan@gmail.com")
+MAIL_FROM_NAME = os.environ.get("MAIL_FROM_NAME", "ZenoFest 2026")
+MAIL_REPLY_TO = os.environ.get("MAIL_REPLY_TO", "pgyukanthan@gmail.com")
 
 
 def is_configured():
-    return bool(SMTP_USER and SMTP_PASSWORD)
+    return bool(SENDGRID_API_KEY)
+
+
+def _sendgrid_send(to_email, subject, html_body,
+                   attachment_name=None, attachment_bytes=None):
+    personalization = {
+        "to": [{"email": to_email}],
+        "subject": subject,
+    }
+    content = {"type": "text/html", "value": html_body}
+
+    payload = {
+        "personalizations": [personalization],
+        "from": {"email": MAIL_FROM_EMAIL, "name": MAIL_FROM_NAME},
+        "reply_to": {"email": MAIL_REPLY_TO, "name": MAIL_FROM_NAME},
+        "content": [content],
+    }
+
+    if attachment_bytes is not None and attachment_name:
+        encoded = base64.b64encode(attachment_bytes).decode("utf-8")
+        payload["attachments"] = [{
+            "content": encoded,
+            "filename": attachment_name,
+        }]
+
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.sendgrid.com/v3/mail/send",
+        data=data,
+        headers={
+            "Authorization": f"Bearer {SENDGRID_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return resp.status
 
 
 def send_confirmation_email(to_email, subject, html_body,
                             attachment_name=None, attachment_bytes=None):
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = formataddr((MAIL_FROM_NAME, SMTP_USER))
-    msg["To"] = to_email
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
-
-    if attachment_bytes is not None:
-        part = MIMEApplication(attachment_bytes, _subtype="pdf")
-        part.add_header("Content-Disposition", "attachment", filename=attachment_name)
-        msg.attach(part)
-
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.send_message(msg)
+    _sendgrid_send(to_email, subject, html_body, attachment_name, attachment_bytes)
 
 
 def _esc(v):
@@ -171,13 +191,8 @@ def send_unauthorized_notification(submission_email, team_id, team_name, tech_ev
   </table>
 </div>"""
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"⚠ ZenoFest 2026 - Unauthorized Submission from {submission_email}"
-    msg["From"] = formataddr((MAIL_FROM_NAME, SMTP_USER))
-    msg["To"] = SMTP_USER
-    msg.attach(MIMEText(html, "html", "utf-8"))
-
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.send_message(msg)
+    _sendgrid_send(
+        to_email=MAIL_FROM_EMAIL,
+        subject=f"⚠ ZenoFest 2026 - Unauthorized Submission from {submission_email}",
+        html_body=html,
+    )
