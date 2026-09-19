@@ -73,7 +73,7 @@ def make_team_id(tech_event, row_num):
 
 def find_team_by_email(email):
     """Search the organized sheet for a row matching `email`.
-    Matches the `Email` (registration) and `Leader Email` columns.
+    Matches the `Email`, `Leader Email`, and column I (index 8) columns.
     Returns a dict with team info or None if not found."""
     email = (email or "").strip().lower()
     if not email or not ORGANIZED_SHEET_ID:
@@ -94,7 +94,9 @@ def find_team_by_email(email):
     for i, row in enumerate(values[1:], start=2):
         row_email = (field(row, "Email") or "").strip().lower()
         leader_email = (field(row, "Leader Email") or "").strip().lower()
-        if email not in (row_email, leader_email):
+        # Also check column I (index 8) for email
+        col_i_email = (row[8] if len(row) > 8 else "").strip().lower()
+        if email not in (row_email, leader_email, col_i_email):
             continue
         tech_event = field(row, "Tech Event")
         dept = field(row, "Department")
@@ -102,7 +104,9 @@ def find_team_by_email(email):
         dept_year = field(row, "Department & Year")
         if not dept_year and (dept or year):
             dept_year = " ".join(x for x in (dept, year) if x)
-        team_id = field(row, "Team ID") or make_team_id(tech_event, i - 1)
+        # Use Team ID from sheet if present, otherwise generate
+        sheet_team_id = field(row, "Team ID")
+        team_id = sheet_team_id if sheet_team_id else make_team_id(tech_event, i - 1)
         return {
             "email": email,
             "team_id": team_id,
