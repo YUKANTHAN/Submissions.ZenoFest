@@ -107,9 +107,9 @@ def find_team_by_email(email):
         dept_year = field(row, "Department & Year")
         if not dept_year and (dept or year):
             dept_year = " ".join(x for x in (dept, year) if x)
-        # Use Team ID from sheet if present, otherwise generate
+        # Use Team ID from sheet if present, otherwise generate using actual sheet row number
         sheet_team_id = field(row, "Team ID")
-        team_id = sheet_team_id if sheet_team_id else make_team_id(tech_event, i - 1)
+        team_id = sheet_team_id if sheet_team_id else make_team_id(tech_event, i)
         return {
             "email": email,
             "team_id": team_id,
