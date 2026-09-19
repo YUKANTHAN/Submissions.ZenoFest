@@ -14,9 +14,9 @@ Add a new event by appending to EVENT_FIELDS:
 EVENT_FIELDS = {
     "Project Expo": [
         {"name": "project_title", "label": "Project Title", "type": "text", "required": True},
-        {"name": "github_url", "label": "GitHub Project URL", "type": "url", "required": True},
-        {"name": "abstract_link", "label": "Abstract (Google Drive DOCX Link)", "type": "url", "required": True},
-        {"name": "ppt_link", "label": "PPT (Google Drive Link)", "type": "url", "required": True},
+        {"name": "github_url", "label": "GitHub Project URL", "type": "url", "required": True, "placeholder": "https://github.com/username/repo"},
+        {"name": "abstract_link", "label": "Abstract (Google Drive DOCX Link)", "type": "url", "required": True, "placeholder": "https://drive.google.com/file/d/your-file-id/view"},
+        {"name": "ppt_link", "label": "PPT (Google Drive Link)", "type": "url", "required": True, "placeholder": "https://drive.google.com/file/d/your-file-id/view"},
         {"name": "development_domain", "label": "Development Domain", "type": "radio", "options": ["Software", "Hardware", "Hybrid (Hardware + Software)"], "required": True},
         {"name": "problem_statement", "label": "Problem Statement", "type": "textarea", "required": True, "max_length": 10000},
         {"name": "proposed_solution", "label": "Proposed Solution", "type": "textarea", "required": True, "max_length": 10000},

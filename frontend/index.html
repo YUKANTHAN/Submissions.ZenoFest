@@ -166,7 +166,8 @@
   .links-group .link-row {
     display: flex; gap: 8px; align-items: center; margin-bottom: 8px;
   }
-  .links-group .link-row input { flex: 1; }
+  .links-group .link-row input.link-label-input { flex: 0 0 140px; }
+  .links-group .link-row input.link-url-input { flex: 1; }
   .links-group .link-row .link-hint {
     font-size: 11px; color: var(--muted); flex-shrink: 0; width: 80px;
   }
@@ -444,7 +445,8 @@
           const opts = (f.options || []).map(o => `<option value="${o}">${o}</option>`).join("");
           input = `<select id="${f.name}" name="${f.name}">${opts}</select>`;
         } else {
-          input = `<input type="${f.type === "url" ? "url" : "text"}" id="${f.name}" name="${f.name}" required="${f.required}">`;
+          const ph = f.placeholder ? ` placeholder="${f.placeholder}"` : '';
+          input = `<input type="${f.type === "url" ? "url" : "text"}" id="${f.name}" name="${f.name}" required="${f.required}"${ph}>`;
         }
         wrap.insertAdjacentHTML("beforeend", label + input);
       }
@@ -462,8 +464,8 @@
     const row = document.createElement("div");
     row.className = "link-row";
     row.innerHTML = `
-      <input type="url" name="${groupName}_${idx}" placeholder="https://...">
-      <span class="link-hint">${hint}</span>
+      <input type="text" class="link-label-input" name="${groupName}_${idx}_label" placeholder="${hint}">
+      <input type="url" class="link-url-input" name="${groupName}_${idx}_url" placeholder="https://...">
       <button type="button" class="icon-btn delete" onclick="removeLinkRow(this)" title="Remove">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -474,9 +476,11 @@
   function removeLinkRow(btn) {
     const row = btn.closest(".link-row");
     const rows = row.parentElement;
+    const groupName = rows.id.replace("-rows", "");
     row.remove();
     rows.querySelectorAll(".link-row").forEach((r, i) => {
-      r.querySelector("input").name = rows.id.replace("-rows", "") + "_" + i;
+      r.querySelector(".link-label-input").name = groupName + "_" + i + "_label";
+      r.querySelector(".link-url-input").name = groupName + "_" + i + "_url";
     });
   }
 
@@ -514,8 +518,10 @@
       const rows = group.querySelector(".link-rows");
       const groupName = rows.id.replace("-rows", "");
       const links = [];
-      rows.querySelectorAll(".link-row input").forEach(inp => {
-        if (inp.value.trim()) links.push(inp.value.trim());
+      rows.querySelectorAll(".link-row").forEach(row => {
+        const label = row.querySelector(".link-label-input").value.trim();
+        const url = row.querySelector(".link-url-input").value.trim();
+        if (label || url) links.push({ label, url });
       });
       if (links.length) formData[groupName] = JSON.stringify(links);
     });
