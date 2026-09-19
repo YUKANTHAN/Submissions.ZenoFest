@@ -31,14 +31,17 @@ DRIVE_DOCX_FILE_ID = os.environ.get("DRIVE_DOCX_FILE_ID", "").strip()
 DEFAULT_DOCX_NAME = "ZenoFest2026_EventSubmissions.docx"
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
+# Write service account JSON to file once at module load if provided via env var
+if SA_JSON_CONTENT:
+    try:
+        with open(SA_JSON_PATH, "w", encoding="utf-8") as fh:
+            fh.write(SA_JSON_CONTENT)
+    except Exception:
+        pass  # fallback to existing file
+
 
 def _credentials():
-    path = SA_JSON
-    if SA_JSON_CONTENT:
-        path = SA_JSON_PATH
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write(SA_JSON_CONTENT)
-    return service_account.Credentials.from_service_account_file(path, scopes=SCOPE)
+    return service_account.Credentials.from_service_account_file(SA_JSON_PATH, scopes=SCOPE)
 
 
 def get_gspread_client():

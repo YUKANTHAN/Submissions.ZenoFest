@@ -79,9 +79,9 @@ def _build_links_table(links, st):
     for label, url in links:
         table_data.append([
             Paragraph(f'<font color="#333333">{label}</font>', st["cell_value"]),
-            Paragraph(f'<font color="#333333"><link href="{url}" color="#0091EA">{url}</link></font>', st["cell_value"]),
+            Paragraph(f'<font color="#0091EA"><a href="{url}">{url}</a></font>', st["cell_value"]),
         ])
-    table = Table(table_data, colWidths=[60 * mm, 98 * mm])
+    table = Table(table_data, colWidths=[55 * mm, 100 * mm])
     table.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 4),

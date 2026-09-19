@@ -521,10 +521,42 @@
       rows.querySelectorAll(".link-row").forEach(row => {
         const label = row.querySelector(".link-label-input").value.trim();
         const url = row.querySelector(".link-url-input").value.trim();
-        if (label || url) links.push({ label, url });
+        if (label && url) links.push({ label, url });
       });
       if (links.length) formData[groupName] = JSON.stringify(links);
     });
+
+    // Client-side required field validation (especially for radio buttons)
+    const fields = allEvents[eventPick] || [];
+    const missing = [];
+    fields.forEach(f => {
+      if (!f.required) return;
+      if (f.type === "radio") {
+        const checked = document.querySelector(`#form-fields input[name="${f.name}"]:checked`);
+        if (!checked) missing.push(f.label);
+      } else if (f.type === "links") {
+        const rows = document.querySelector(`#${f.name}-rows`);
+        if (!rows || rows.children.length === 0) {
+          missing.push(f.label);
+        } else {
+          let hasValidLink = false;
+          rows.querySelectorAll(".link-row").forEach(row => {
+            const label = row.querySelector(".link-label-input").value.trim();
+            const url = row.querySelector(".link-url-input").value.trim();
+            if (label && url) hasValidLink = true;
+          });
+          if (!hasValidLink) missing.push(f.label);
+        }
+      } else {
+        const el = document.getElementById(f.name);
+        if (!el || !el.value.trim()) missing.push(f.label);
+      }
+    });
+    if (missing.length) {
+      $("form-msg").textContent = "Missing required fields: " + missing.join(", ");
+      $("form-msg").classList.add("error");
+      return;
+    }
 
     // If not verified, show popup for team details
     if (!verifiedTeam) {
@@ -620,10 +652,11 @@
     currentTeam = null;
     verifiedTeam = null;
     pendingFormData = null;
-    $("email").value = "pgyukanthan@gmail.com";
+    $("email").value = "";
     $("form-msg").className = "msg";
     $("team-badges").innerHTML = "";
-    $("email").dispatchEvent(new Event("input"));
+    $("verified-badge").classList.remove("show", "not-verified");
+    $("unauth-note").classList.remove("show");
     populateEventDropdown();
     buildForm();
     showStep("form");

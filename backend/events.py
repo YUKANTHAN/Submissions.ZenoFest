@@ -27,6 +27,19 @@ EVENT_FIELDS = {
         {"name": "future_scope", "label": "Future Scope", "type": "textarea", "required": True, "max_length": 10000},
         {"name": "additional_links", "label": "Additional Links", "type": "links", "required": False, "hint": "UI/UX Design Link"},
     ],
+    "UI/UX Design using Figma": [
+        {"name": "project_title", "label": "Project Title", "type": "text", "required": True},
+        {"name": "figma_link", "label": "Figma Prototype Link", "type": "url", "required": True, "placeholder": "https://www.figma.com/proto/..."},
+        {"name": "figma_file_link", "label": "Figma File Link (Editor Access)", "type": "url", "required": True, "placeholder": "https://www.figma.com/file/..."},
+        {"name": "design_brief", "label": "Design Brief / Problem Statement", "type": "textarea", "required": True, "max_length": 10000},
+        {"name": "target_audience", "label": "Target Audience / Users", "type": "text", "required": True},
+        {"name": "design_tools", "label": "Design Tools Used", "type": "text", "required": True, "placeholder": "Figma, FigJam, etc."},
+        {"name": "user_flow", "label": "User Flow Description", "type": "textarea", "required": True, "max_length": 10000},
+        {"name": "key_screens", "label": "Key Screens Designed", "type": "textarea", "required": True, "max_length": 10000},
+        {"name": "design_system", "label": "Design System / Components Used", "type": "textarea", "max_length": 5000},
+        {"name": "usability_testing", "label": "Usability Testing Notes", "type": "textarea", "max_length": 5000},
+        {"name": "additional_links", "label": "Additional Links", "type": "links", "required": False, "hint": "Research / References Link"},
+    ],
 }
 
 
