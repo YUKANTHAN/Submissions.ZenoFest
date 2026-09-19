@@ -86,6 +86,14 @@
   .msg.success { display: block; background: rgba(76,175,80,.12); border: 1px solid #4caf50; color: #a5d6a7; }
   .step { display: none; }
   .step.active { display: block; }
+  .loading-spinner {
+    text-align: center; padding: 40px 0; color: var(--muted); font-size: 14px;
+  }
+  .loading-spinner .ring {
+    width: 36px; height: 36px; margin: 0 auto 12px;
+    border: 3px solid var(--border); border-top-color: var(--cyan);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
   .team-badge { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 6px; }
   .pill {
     font-size: 12px; padding: 5px 12px; border-radius: 999px;
@@ -187,7 +195,13 @@
     <div class="blink-msg">Download the PPT template before filling this form!</div>
 
     <!-- Main form -->
-    <section id="step-form" class="step active">
+    <section id="step-loading" class="step active">
+      <div class="loading-spinner">
+        <div class="ring"></div>
+        Loading form...
+      </div>
+    </section>
+    <section id="step-form" class="step">
       <label for="email">Email Address</label>
       <div class="email-wrap">
         <input type="email" id="email" value="pgyukanthan@gmail.com" autocomplete="email">
@@ -250,6 +264,7 @@
       allEvents = await res.json();
       populateEventDropdown();
       buildForm();
+      showStep("form");
     } catch (e) { console.error("Failed to load events", e); }
   })();
 
