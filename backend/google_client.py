@@ -73,7 +73,7 @@ def make_team_id(tech_event, row_num):
 
 def find_team_by_email(email):
     """Search the organized sheet for a row matching `email`.
-    Matches the `Email`, `Leader Email`, column I (index 8), column Q (index 16), column R (index 17).
+    Matches the `Email` column, column I (Leader Email, index 8), column Q (Member 2, index 16), column R (Member 3, index 17).
     Returns a dict with team info or None if not found."""
     email = (email or "").strip().lower()
     if not email or not ORGANIZED_SHEET_ID:
@@ -93,11 +93,13 @@ def find_team_by_email(email):
     headers = values[0]
     for i, row in enumerate(values[1:], start=2):
         row_email = (field(row, "Email") or "").strip().lower()
-        leader_email = (field(row, "Leader Email") or "").strip().lower()
-        col_i_email = (row[8] if len(row) > 8 else "").strip().lower()
-        col_q_email = (row[16] if len(row) > 16 else "").strip().lower()
-        col_r_email = (row[17] if len(row) > 17 else "").strip().lower()
-        if email not in (row_email, leader_email, col_i_email, col_q_email, col_r_email):
+        # Leader Email is column I (index 8)
+        leader_email = (row[8] if len(row) > 8 else "").strip().lower()
+        # Member 2 email is column Q (index 16)
+        member2_email = (row[16] if len(row) > 16 else "").strip().lower()
+        # Member 3 email is column R (index 17)
+        member3_email = (row[17] if len(row) > 17 else "").strip().lower()
+        if email not in (row_email, leader_email, member2_email, member3_email):
             continue
         tech_event = field(row, "Tech Event")
         dept = field(row, "Department")
