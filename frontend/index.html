@@ -184,24 +184,25 @@
 </head>
 <body>
   <div class="card">
-    <div class="header-row">
-      <h1>ZENOFEST 2026</h1>
-      <a class="download-ppt-btn" id="btn-download-ppt" href="#" download="ZenoFest Project Expo PPT Template.pptx">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download PPT Template
-      </a>
-    </div>
-    <div class="tag">Event Data Submission</div>
-    <div class="blink-msg">Download the PPT template before filling this form!</div>
-
-    <!-- Main form -->
     <section id="step-loading" class="step active">
       <div class="loading-spinner">
         <div class="ring"></div>
         Loading form...
       </div>
     </section>
-    <section id="step-form" class="step">
+    <div id="main-content" style="display:none;">
+      <div class="header-row">
+        <h1>ZENOFEST 2026</h1>
+        <a class="download-ppt-btn" id="btn-download-ppt" href="#" download="ZenoFest Project Expo PPT Template.pptx">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PPT Template
+        </a>
+      </div>
+      <div class="tag">Event Data Submission</div>
+      <div class="blink-msg">Download the PPT template before filling this form!</div>
+
+      <!-- Main form -->
+      <section id="step-form" class="step active">
       <label for="email">Email Address</label>
       <div class="email-wrap">
         <input type="email" id="email" value="pgyukanthan@gmail.com" autocomplete="email">
@@ -226,6 +227,7 @@
       <div class="msg success" id="success-msg" style="display:block;"></div>
       <button class="btn" id="btn-another" style="background: linear-gradient(90deg,#444,#666);">Submit for Another Team</button>
     </section>
+    </div>
   </div>
 
   <!-- Unverified popup -->
@@ -264,7 +266,8 @@
       allEvents = await res.json();
       populateEventDropdown();
       buildForm();
-      showStep("form");
+      $("step-loading").classList.remove("active");
+      $("main-content").style.display = "";
     } catch (e) { console.error("Failed to load events", e); }
   })();
 
