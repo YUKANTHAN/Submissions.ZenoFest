@@ -89,10 +89,8 @@
   .loading-spinner {
     text-align: center; padding: 40px 0; color: var(--muted); font-size: 14px;
   }
-  .loading-spinner .ring {
-    width: 36px; height: 36px; margin: 0 auto 12px;
-    border: 3px solid var(--border); border-top-color: var(--cyan);
-    border-radius: 50%; animation: spin .7s linear infinite;
+  .loading-spinner svg {
+    width: 80px; height: 80px; margin-bottom: 12px; color: var(--cyan);
   }
   .team-badge { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 6px; }
   .pill {
@@ -186,8 +184,12 @@
   <div class="card">
     <section id="step-loading" class="step active">
       <div class="loading-spinner">
-        <div class="ring"></div>
-        Loading form...
+        <svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <g id="spiral-group">
+            <path id="spiral-path" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" opacity="0.1" stroke-width="4.3"></path>
+          </g>
+        </svg>
+        <div>Loading form...</div>
       </div>
     </section>
     <div id="main-content" style="display:none;">
@@ -249,6 +251,56 @@
 
 <script src="config.js"></script>
 <script>
+  // Spiral loader animation
+  (function() {
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const cfg = {
+      particleCount: 86, trailSpan: 0.28, durationMs: 7800,
+      strokeWidth: 4.3, searchTurns: 4, searchBaseRadius: 8,
+      searchRadiusAmp: 8.5, searchPulse: 2.4, searchScale: 1
+    };
+    const group = document.getElementById('spiral-group');
+    const path = document.getElementById('spiral-path');
+    if (!group || !path) return;
+    const particles = Array.from({ length: cfg.particleCount }, () => {
+      const c = document.createElementNS(SVG_NS, 'circle');
+      c.setAttribute('fill', 'currentColor');
+      group.appendChild(c);
+      return c;
+    });
+    function norm(p) { return ((p % 1) + 1) % 1; }
+    function pt(progress, ds) {
+      const t = progress * Math.PI * 2;
+      const angle = t * cfg.searchTurns;
+      const r = cfg.searchBaseRadius + (1 - Math.cos(t)) * (cfg.searchRadiusAmp + ds * cfg.searchPulse);
+      return { x: 50 + Math.cos(angle) * r * cfg.searchScale, y: 50 + Math.sin(angle) * r * cfg.searchScale };
+    }
+    function buildPath(ds, steps) {
+      return Array.from({ length: steps + 1 }, (_, i) => {
+        const p = pt(i / steps, ds);
+        return `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+      }).join(' ');
+    }
+    const started = performance.now();
+    function render(now) {
+      const time = now - started;
+      const progress = (time % cfg.durationMs) / cfg.durationMs;
+      const ds = 0.52 + ((Math.sin((time % 6800) / 6800 * Math.PI * 2 + 0.55) + 1) / 2) * 0.48;
+      path.setAttribute('d', buildPath(ds, 480));
+      particles.forEach((node, i) => {
+        const tail = i / (cfg.particleCount - 1);
+        const p = pt(norm(progress - tail * cfg.trailSpan), ds);
+        const fade = Math.pow(1 - tail, 0.56);
+        node.setAttribute('cx', p.x.toFixed(2));
+        node.setAttribute('cy', p.y.toFixed(2));
+        node.setAttribute('r', (0.9 + fade * 2.7).toFixed(2));
+        node.setAttribute('opacity', (0.04 + fade * 0.96).toFixed(3));
+      });
+      requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+  })();
+
   const $ = (id) => document.getElementById(id);
   let currentTeam = null;
   let allEvents = {};
