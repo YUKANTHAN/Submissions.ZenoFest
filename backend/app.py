@@ -12,7 +12,7 @@ Flow:
 """
 import os
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory
@@ -114,7 +114,8 @@ def submit():
     team_name = team.get("team_name") or ""
     leader_name = team.get("leader_name") or ""
     college = team.get("college") or ""
-    submitted_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    ist = timezone(timedelta(hours=5, minutes=30))
+    submitted_at = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
 
     # 1) Save to Supabase (optional — don't block the rest of the flow if it fails).
     import uuid as _uuid
@@ -211,6 +212,19 @@ def submit():
         "docx_status": "appended" if not docx_error else f"failed: {docx_error}",
         "mail_status": mail_status,
     }), 200
+
+
+@app.get("/api/ppt-template")
+def ppt_template():
+    """Download the PPT template for Project Expo."""
+    from flask import send_file
+    ppt_path = os.path.join(os.path.dirname(__file__), "..", "Project_expo_template_ppt.pptx")
+    ppt_path = os.path.normpath(ppt_path)
+    if not os.path.exists(ppt_path):
+        return jsonify({"ok": False, "error": "PPT template not found"}), 404
+    return send_file(ppt_path, as_attachment=True,
+                     download_name="ZenoFest Project Expo PPT Template.pptx",
+                     mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation")
 
 
 @app.get("/health")

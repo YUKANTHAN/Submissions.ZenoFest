@@ -134,12 +134,57 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
   .modal .tag { margin-bottom: 16px; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .header-row h1 { margin-bottom: 0; }
+  .download-ppt-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    background: linear-gradient(90deg, var(--purple-light), var(--cyan));
+    color: #fff; border: none; border-radius: 10px;
+    cursor: pointer; text-decoration: none; white-space: nowrap;
+    transition: filter .15s, transform .1s;
+  }
+  .download-ppt-btn:hover { filter: brightness(1.15); }
+  .download-ppt-btn:active { transform: translateY(1px); }
+  .download-ppt-btn svg { width: 16px; height: 16px; }
+  .blink-msg {
+    text-align: center; font-size: 13px; font-weight: 600;
+    color: var(--cyan); margin-bottom: 20px;
+    animation: blink-anim 1.5s ease-in-out infinite;
+  }
+  @keyframes blink-anim {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .links-group { margin-top: 4px; }
+  .links-group .link-row {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 8px;
+  }
+  .links-group .link-row input { flex: 1; }
+  .links-group .link-row .link-hint {
+    font-size: 11px; color: var(--muted); flex-shrink: 0; width: 80px;
+  }
+  .links-group .icon-btn {
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--dark); color: var(--text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: border-color .15s, background .15s;
+  }
+  .links-group .icon-btn:hover { border-color: var(--cyan); background: rgba(0,145,234,.1); }
+  .links-group .icon-btn.delete:hover { border-color: #f44336; background: rgba(244,67,54,.1); color: #ff8a80; }
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>ZENOFEST 2026</h1>
+    <div class="header-row">
+      <h1>ZENOFEST 2026</h1>
+      <a class="download-ppt-btn" id="btn-download-ppt" href="#" download="ZenoFest Project Expo PPT Template.pptx">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PPT Template
+      </a>
+    </div>
     <div class="tag">Event Data Submission</div>
+    <div class="blink-msg">Download the PPT template before filling this form!</div>
 
     <!-- Main form -->
     <section id="step-form" class="step active">
@@ -206,6 +251,18 @@
       populateEventDropdown();
       buildForm();
     } catch (e) { console.error("Failed to load events", e); }
+  })();
+
+  // PPT template download — fetch from backend
+  (async () => {
+    try {
+      const res = await fetch(API_BASE + "/api/ppt-template");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        $("btn-download-ppt").href = url;
+      }
+    } catch (e) { console.error("PPT template fetch failed", e); }
   })();
 
   function populateEventDropdown(preselect) {
@@ -291,26 +348,65 @@
     const wrap = $("form-fields");
     wrap.innerHTML = "";
     fields.forEach(f => {
-      const label = `<label for="${f.name}">${f.label}${f.required ? ' <span class="required-star">*</span>' : ""}${f.max_length ? ` <span class="charcount" id="count-${f.name}"></span>` : ""}</label>`;
-      let input;
-      if (f.type === "textarea") {
-        input = `<textarea id="${f.name}" name="${f.name}" required="${f.required}"${f.max_length ? ` maxlength="${f.max_length}" oninput="updateCount('${f.name}', ${f.max_length})"` : ""}></textarea>`;
-      } else if (f.type === "radio") {
-        const opts = (f.options || []).map((o, i) => `<label><input type="radio" name="${f.name}" value="${o}"${i === 0 ? " checked" : ""}> ${o}</label>`).join("");
-        input = `<div class="radio-group">${opts}</div>`;
-      } else if (f.type === "select") {
-        const opts = (f.options || []).map(o => `<option value="${o}">${o}</option>`).join("");
-        input = `<select id="${f.name}" name="${f.name}">${opts}</select>`;
+      if (f.type === "links") {
+        const container = document.createElement("div");
+        container.className = "links-group";
+        container.id = f.name + "-group";
+        container.innerHTML = `
+          <label>${f.label}${f.required ? ' <span class="required-star">*</span>' : ""}</label>
+          <div class="link-rows" id="${f.name}-rows"></div>
+          <button type="button" class="icon-btn" onclick="addLinkRow('${f.name}', '${f.hint || "Link"}')" title="Add link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        `;
+        wrap.appendChild(container);
+        addLinkRow(f.name, f.hint || "Link");
       } else {
-        input = `<input type="${f.type === "url" ? "url" : "text"}" id="${f.name}" name="${f.name}" required="${f.required}">`;
+        const label = `<label for="${f.name}">${f.label}${f.required ? ' <span class="required-star">*</span>' : ""}${f.max_length ? ` <span class="charcount" id="count-${f.name}"></span>` : ""}</label>`;
+        let input;
+        if (f.type === "textarea") {
+          input = `<textarea id="${f.name}" name="${f.name}" required="${f.required}"${f.max_length ? ` maxlength="${f.max_length}" oninput="updateCount('${f.name}', ${f.max_length})"` : ""}></textarea>`;
+        } else if (f.type === "radio") {
+          const opts = (f.options || []).map((o, i) => `<label><input type="radio" name="${f.name}" value="${o}"${i === 0 ? " checked" : ""}> ${o}</label>`).join("");
+          input = `<div class="radio-group">${opts}</div>`;
+        } else if (f.type === "select") {
+          const opts = (f.options || []).map(o => `<option value="${o}">${o}</option>`).join("");
+          input = `<select id="${f.name}" name="${f.name}">${opts}</select>`;
+        } else {
+          input = `<input type="${f.type === "url" ? "url" : "text"}" id="${f.name}" name="${f.name}" required="${f.required}">`;
+        }
+        wrap.insertAdjacentHTML("beforeend", label + input);
       }
-      wrap.insertAdjacentHTML("beforeend", label + input);
     });
     document.querySelectorAll("#form-fields textarea").forEach(t => {
       t.dispatchEvent(new Event("input"));
     });
     $("form-msg").className = "msg";
     $("form-msg").textContent = "";
+  }
+
+  function addLinkRow(groupName, hint) {
+    const rows = $(groupName + "-rows");
+    const idx = rows.children.length;
+    const row = document.createElement("div");
+    row.className = "link-row";
+    row.innerHTML = `
+      <input type="url" name="${groupName}_${idx}" placeholder="https://...">
+      <span class="link-hint">${hint}</span>
+      <button type="button" class="icon-btn delete" onclick="removeLinkRow(this)" title="Remove">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    rows.appendChild(row);
+  }
+
+  function removeLinkRow(btn) {
+    const row = btn.closest(".link-row");
+    const rows = row.parentElement;
+    row.remove();
+    rows.querySelectorAll(".link-row").forEach((r, i) => {
+      r.querySelector("input").name = rows.id.replace("-rows", "") + "_" + i;
+    });
   }
 
   function updateCount(name, max) {
@@ -342,6 +438,15 @@
     document.querySelectorAll("#form-fields [name]").forEach(el => {
       if (el.type === "radio" && !el.checked) return;
       formData[el.name] = el.value.trim();
+    });
+    document.querySelectorAll("#form-fields .links-group").forEach(group => {
+      const rows = group.querySelector(".link-rows");
+      const groupName = rows.id.replace("-rows", "");
+      const links = [];
+      rows.querySelectorAll(".link-row input").forEach(inp => {
+        if (inp.value.trim()) links.push(inp.value.trim());
+      });
+      if (links.length) formData[groupName] = JSON.stringify(links);
     });
 
     // If not verified, show popup for team details
