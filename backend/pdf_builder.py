@@ -6,8 +6,10 @@ anywhere (Render free tier) with no external converter.
 Layout: event name as the title; an invisible (line-free) two-column
 table holds Team ID|Team Name, Project Title|Leader Name, Email|College;
 remaining submission fields print full-width below.
+Additional Links are rendered as a table.
 """
 import io
+import json
 from datetime import datetime
 
 from reportlab.lib.pagesizes import A4
@@ -52,6 +54,44 @@ def _cell(label, value, st):
         f'<font color="#6A0DAD"><b>{label}</b></font>:&nbsp;'
         f'<font color="#333333">{value}</font>',
         st["cell_value"])
+
+
+def _parse_links(value):
+    """Parse links field which may be JSON array of {label, url} or plain string."""
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+        if isinstance(parsed, list):
+            return [(item.get("label", ""), item.get("url", "")) for item in parsed]
+    except (json.JSONDecodeError, TypeError):
+        pass
+    # Fallback: treat as single URL
+    return [("", str(value))]
+
+
+def _build_links_table(links, st):
+    """Build a table for additional links with Label and URL columns."""
+    if not links:
+        return None
+    table_data = [[Paragraph('<b><font color="#0091EA">Label</font></b>', st["cell_value"]),
+                   Paragraph('<b><font color="#0091EA">URL</font></b>', st["cell_value"])]]
+    for label, url in links:
+        table_data.append([
+            Paragraph(f'<font color="#333333">{label}</font>', st["cell_value"]),
+            Paragraph(f'<font color="#333333"><link href="{url}" color="#0091EA">{url}</link></font>', st["cell_value"]),
+        ])
+    table = Table(table_data, colWidths=[60 * mm, 98 * mm])
+    table.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("GRID", (0, 0), (-1, -1), 0.5, MUTED),
+        ("BACKGROUND", (0, 0), (-1, 0), HexColor("#f0f0f0")),
+    ]))
+    return table
 
 
 def build_submission_pdf(submission):
@@ -110,6 +150,17 @@ def build_submission_pdf(submission):
         if key in already_shown:
             continue
         label = labels.get(key, key.replace("_", " ").title())
+        # Handle additional_links as a table
+        if key == "additional_links" and value:
+            links = _parse_links(value)
+            if links:
+                link_table = _build_links_table(links, st)
+                if link_table:
+                    story.append(Paragraph(f'<b><font color="#0091EA">{label}</font>:</b>', st["field_value"]))
+                    story.append(Spacer(1, 3))
+                    story.append(link_table)
+                    story.append(Spacer(1, 6))
+                    continue
         story.append(Paragraph(f'<b><font color="#0091EA">{label}</font>:</b>&nbsp;'
                                f'<font color="#333333">{value}</font>',
                                st["field_value"]))

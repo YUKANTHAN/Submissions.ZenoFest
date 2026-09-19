@@ -5,17 +5,21 @@ Every submission is appended as a fresh page to a single shared DOCX file:
   1. Read the existing file (or start a new one).
   2. Append a branded section per submission.
   3. Return the new bytes so the caller can upload them to Drive.
+Additional Links are rendered as a table.
 """
 import io
+import json
 from datetime import datetime
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor, Inches
+from docx.oxml.ns import qn
 
 ZENOFEST_PURPLE = RGBColor(0x6A, 0x0D, 0xAD)
 ZENOFEST_CYAN = RGBColor(0x00, 0x91, 0xEA)
 DARK_GRAY = RGBColor(0x33, 0x33, 0x33)
+LIGHT_GRAY = RGBColor(0xF0, 0xF0, 0xF0)
 
 
 def _add_header_rule(doc, color=ZENOFEST_CYAN):
@@ -38,6 +42,60 @@ def _add_field(doc, label, value):
     value_run.font.color.rgb = DARK_GRAY
     value_run.font.size = Pt(11)
     return p
+
+
+def _parse_links(value):
+    """Parse links field which may be JSON array of {label, url} or plain string."""
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+        if isinstance(parsed, list):
+            return [(item.get("label", ""), item.get("url", "")) for item in parsed]
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return [("", str(value))]
+
+
+def _add_links_table(doc, label, value):
+    """Add a table for additional links with Label and URL columns."""
+    links = _parse_links(value)
+    if not links:
+        return
+    p = doc.add_paragraph()
+    run = p.add_run(f"{label}:")
+    run.bold = True
+    run.font.color.rgb = ZENOFEST_CYAN
+    run.font.size = Pt(11)
+    
+    table = doc.add_table(rows=1 + len(links), cols=2, style='Table Grid')
+    table.autofit = True
+    
+    # Header row
+    hdr_cells = table.rows[0].cells
+    for i, text in enumerate(["Label", "URL"]):
+        run = hdr_cells[i].paragraphs[0].add_run(text)
+        run.bold = True
+        run.font.color.rgb = ZENOFEST_PURPLE
+        run.font.size = Pt(10)
+        # Background color for header
+        shading = hdr_cells[i]._element.get_or_add_tcPr()
+        shading_elm = shading.makeelement(qn('w:shd'), {
+            qn('w:fill'): 'F0F0F0',
+            qn('w:val'): 'clear'
+        })
+        shading.append(shading_elm)
+    
+    # Data rows
+    for row_idx, (link_label, url) in enumerate(links, 1):
+        row_cells = table.rows[row_idx].cells
+        run = row_cells[0].paragraphs[0].add_run(link_label)
+        run.font.color.rgb = DARK_GRAY
+        run.font.size = Pt(10)
+        run = row_cells[1].paragraphs[0].add_run(url)
+        run.font.color.rgb = ZENOFEST_CYAN
+        run.font.size = Pt(10)
+        run.underline = True
 
 
 def build_initial_doc():
@@ -123,7 +181,10 @@ def append_submission(existing_bytes, submission):
     labels = submission.get("field_labels") or {}
     for key, value in (submission.get("form_data") or {}).items():
         label = labels.get(key, key.replace("_", " ").title())
-        _add_field(doc, label, value)
+        if key == "additional_links" and value:
+            _add_links_table(doc, label, value)
+        else:
+            _add_field(doc, label, value)
 
     buf = io.BytesIO()
     doc.save(buf)

@@ -581,8 +581,13 @@
       }
       const docxNote = data.docx_status === "appended" ? "" : " Saved, but DOCX append failed.";
       const mailNote = data.mail_status === "sent" ? " A confirmation PDF has been emailed to you." : "";
-      $("success-msg").textContent =
-        `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}`;
+      // Build spam folder link based on email domain
+      const spamLink = buildSpamFolderLink(email);
+      const spamNote = spamLink 
+        ? ` If you don't see the email, <a href="${spamLink}" target="_blank" rel="noopener">check your spam folder</a>.` 
+        : " If you don't see the email, check your spam folder.";
+      $("success-msg").innerHTML =
+        `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}${spamNote}`;
       showStep("success");
     } catch (err) {
       $("form-msg").textContent = "Network error. Please try again.";
@@ -591,6 +596,24 @@
       btn.innerHTML = "Submit My Entry";
       btn.disabled = false;
     }
+  }
+
+  function buildSpamFolderLink(email) {
+    const domain = (email.split("@")[1] || "").toLowerCase();
+    const links = {
+      "gmail.com": "https://mail.google.com/mail/u/0/#spam",
+      "googlemail.com": "https://mail.google.com/mail/u/0/#spam",
+      "outlook.com": "https://outlook.live.com/mail/junk",
+      "hotmail.com": "https://outlook.live.com/mail/junk",
+      "live.com": "https://outlook.live.com/mail/junk",
+      "yahoo.com": "https://mail.yahoo.com/d/folders/2",
+      "yahoo.co.in": "https://mail.yahoo.com/d/folders/2",
+      "protonmail.com": "https://mail.proton.me/u/0/spam",
+      "proton.me": "https://mail.proton.me/u/0/spam",
+      "icloud.com": "https://www.icloud.com/mail/#spam",
+      "zoho.com": "https://mail.zoho.com/zm/#folder/spam",
+    };
+    return links[domain] || null;
   }
 
   $("btn-another").addEventListener("click", () => {
