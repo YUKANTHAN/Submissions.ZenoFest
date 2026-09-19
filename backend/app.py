@@ -204,6 +204,27 @@ def submit():
         except Exception as exc:
             app.logger.exception("unauthorized notification failed")
 
+    # 5) Append to Project Expo tracking spreadsheet (if Project Expo event).
+    project_expo_status = "skipped"
+    try:
+        submission_record = {
+            "team_id": team_id,
+            "team_name": team_name,
+            "tech_event": tech_event,
+            "leader_name": leader_name,
+            "college": college,
+            "email": email,
+            "submitted_at": submitted_at,
+            "form_data": form_data,
+        }
+        if gc.append_project_expo_submission(submission_record):
+            project_expo_status = "appended"
+        else:
+            project_expo_status = "not_applicable_or_failed"
+    except Exception as exc:
+        app.logger.exception("Project Expo sheet append failed")
+        project_expo_status = f"failed: {exc}"
+
     return jsonify({
         "ok": True,
         "submission_id": submission_id,
@@ -211,6 +232,7 @@ def submit():
         "db_status": db_status,
         "docx_status": "appended" if not docx_error else f"failed: {docx_error}",
         "mail_status": mail_status,
+        "project_expo_status": project_expo_status,
     }), 200
 
 

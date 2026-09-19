@@ -25,6 +25,8 @@ SA_JSON_CONTENT = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
 SA_JSON_PATH = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", SA_JSON)
 ORGANIZED_SHEET_ID = os.environ.get("ORGANIZED_SHEET_ID", "").strip()
 ORGANIZED_TAB_NAME = os.environ.get("ORGANIZED_TAB_NAME", "Sheet1").strip()
+PROJECT_EXPO_SHEET_ID = os.environ.get("PROJECT_EXPO_SHEET_ID", "").strip()
+PROJECT_EXPO_TAB_NAME = os.environ.get("PROJECT_EXPO_TAB_NAME", "Sheet1").strip()
 DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "").strip()
 DRIVE_DOCX_FILE_ID = os.environ.get("DRIVE_DOCX_FILE_ID", "").strip()
 
@@ -180,3 +182,93 @@ def save_docx(docx_bytes):
     if docx_exists():
         return upload_docx(docx_bytes)
     return create_docx(docx_bytes)
+
+
+# ---------------------------------------------------------------------------
+# Sheets: Project Expo submission tracking
+# ---------------------------------------------------------------------------
+
+PROJECT_EXPO_HEADERS = [
+    "Timestamp",
+    "Team ID",
+    "Team Name",
+    "Leader Name",
+    "Project Title",
+    "GitHub URL",
+    "Abstract URL",
+    "PPT URL",
+    "Additional Links",
+    "Submitted At",
+    "Email",
+]
+
+
+def _get_project_expo_worksheet():
+    """Get the Project Expo worksheet, creating headers if needed."""
+    if not PROJECT_EXPO_SHEET_ID:
+        return None
+    ws = get_gspread_client().open_by_key(PROJECT_EXPO_SHEET_ID).worksheet(PROJECT_EXPO_TAB_NAME)
+    # Ensure headers exist
+    existing = ws.row_values(1)
+    if not existing or existing != PROJECT_EXPO_HEADERS:
+        ws.update("A1", [PROJECT_EXPO_HEADERS])
+    return ws
+
+
+def _format_additional_links(form_data):
+    """Format additional_links JSON array into a readable string."""
+    import json
+    links_str = form_data.get("additional_links", "")
+    if not links_str:
+        return ""
+    try:
+        links = json.loads(links_str)
+        if isinstance(links, list):
+            return "; ".join(f"{link.get('label', '')}: {link.get('url', '')}" for link in links if link.get('label') or link.get('url'))
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return links_str
+
+
+def append_project_expo_submission(submission):
+    """
+    Append a Project Expo submission to the tracking spreadsheet.
+    `submission` dict should contain:
+        team_id, team_name, tech_event, leader_name, college, email, submitted_at,
+        form_data (dict with project_title, github_url, abstract_link, ppt_link, additional_links)
+    Returns True if successful, False otherwise.
+    """
+    if not PROJECT_EXPO_SHEET_ID:
+        return False
+    if submission.get("tech_event") != "Project Expo":
+        return False  # Only track Project Expo submissions
+
+    try:
+        ws = _get_project_expo_worksheet()
+        if not ws:
+            return False
+
+        form_data = submission.get("form_data") or {}
+        from datetime import datetime, timezone, timedelta
+        ist = timezone(timedelta(hours=5, minutes=30))
+        timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
+
+        row = [
+            timestamp,                              # Timestamp
+            submission.get("team_id", ""),          # Team ID
+            submission.get("team_name", ""),        # Team Name
+            submission.get("leader_name", ""),      # Leader Name
+            form_data.get("project_title", ""),     # Project Title
+            form_data.get("github_url", ""),        # GitHub URL
+            form_data.get("abstract_link", ""),     # Abstract URL
+            form_data.get("ppt_link", ""),          # PPT URL
+            _format_additional_links(form_data),    # Additional Links
+            submission.get("submitted_at", ""),     # Submitted At
+            submission.get("email", ""),            # Email
+        ]
+        ws.append_row(row, value_input_option="USER_ENTERED")
+        return True
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception("Failed to append Project Expo submission")
+        return False
