@@ -27,6 +27,8 @@ ORGANIZED_SHEET_ID = os.environ.get("ORGANIZED_SHEET_ID", "").strip()
 ORGANIZED_TAB_NAME = os.environ.get("ORGANIZED_TAB_NAME", "Sheet1").strip()
 PROJECT_EXPO_SHEET_ID = os.environ.get("PROJECT_EXPO_SHEET_ID", "").strip()
 PROJECT_EXPO_TAB_NAME = os.environ.get("PROJECT_EXPO_TAB_NAME", "Sheet1").strip()
+UIUX_DESIGN_SHEET_ID = os.environ.get("UIUX_DESIGN_SHEET_ID", "").strip()
+UIUX_DESIGN_TAB_NAME = os.environ.get("UIUX_DESIGN_TAB_NAME", "Sheet1").strip()
 DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "").strip()
 DRIVE_DOCX_FILE_ID = os.environ.get("DRIVE_DOCX_FILE_ID", "").strip()
 
@@ -271,4 +273,80 @@ def append_project_expo_submission(submission):
     except Exception as exc:
         import logging
         logging.getLogger(__name__).exception("Failed to append Project Expo submission")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Sheets: UI/UX Design submission tracking
+# ---------------------------------------------------------------------------
+
+UIUX_DESIGN_HEADERS = [
+    "Timestamp",
+    "Team ID",
+    "Team Name",
+    "Leader Name",
+    "Project Title",
+    "Figma Prototype Link",
+    "Short Description",
+    "Target Users",
+    "Key Features / Screens",
+    "Additional Links",
+    "Submitted At",
+    "Email",
+]
+
+
+def _get_uiux_design_worksheet():
+    """Get the UI/UX Design worksheet, creating headers if needed."""
+    if not UIUX_DESIGN_SHEET_ID:
+        return None
+    ws = get_gspread_client().open_by_key(UIUX_DESIGN_SHEET_ID).worksheet(UIUX_DESIGN_TAB_NAME)
+    existing = ws.row_values(1)
+    if not existing or existing != UIUX_DESIGN_HEADERS:
+        ws.update("A1", [UIUX_DESIGN_HEADERS])
+    return ws
+
+
+def append_uiux_design_submission(submission):
+    """
+    Append a UI/UX Design submission to the tracking spreadsheet.
+    `submission` dict should contain:
+        team_id, team_name, tech_event, leader_name, college, email, submitted_at,
+        form_data (dict with project_title, figma_link, short_description, target_users, key_features, additional_links)
+    Returns True if successful, False otherwise.
+    """
+    if not UIUX_DESIGN_SHEET_ID:
+        return False
+    if submission.get("tech_event") != "UI/UX Design using Figma":
+        return False
+
+    try:
+        ws = _get_uiux_design_worksheet()
+        if not ws:
+            return False
+
+        form_data = submission.get("form_data") or {}
+        from datetime import datetime, timezone, timedelta
+        ist = timezone(timedelta(hours=5, minutes=30))
+        timestamp = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
+
+        row = [
+            timestamp,                              # Timestamp
+            submission.get("team_id", ""),          # Team ID
+            submission.get("team_name", ""),        # Team Name
+            submission.get("leader_name", ""),      # Leader Name
+            form_data.get("project_title", ""),     # Project Title
+            form_data.get("figma_link", ""),        # Figma Prototype Link
+            form_data.get("short_description", ""), # Short Description
+            form_data.get("target_users", ""),      # Target Users
+            form_data.get("key_features", ""),      # Key Features / Screens
+            _format_additional_links(form_data),    # Additional Links
+            submission.get("submitted_at", ""),     # Submitted At
+            submission.get("email", ""),            # Email
+        ]
+        ws.append_row(row, value_input_option="USER_ENTERED")
+        return True
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception("Failed to append UI/UX Design submission")
         return False

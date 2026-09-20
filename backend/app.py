@@ -225,6 +225,17 @@ def submit():
         app.logger.exception("Project Expo sheet append failed")
         project_expo_status = f"failed: {exc}"
 
+    # 6) Append to UI/UX Design tracking spreadsheet (if UI/UX Design event).
+    uiux_status = "skipped"
+    try:
+        if gc.append_uiux_design_submission(submission_record):
+            uiux_status = "appended"
+        else:
+            uiux_status = "not_applicable_or_failed"
+    except Exception as exc:
+        app.logger.exception("UI/UX Design sheet append failed")
+        uiux_status = f"failed: {exc}"
+
     return jsonify({
         "ok": True,
         "submission_id": submission_id,
@@ -233,6 +244,7 @@ def submit():
         "docx_status": "appended" if not docx_error else f"failed: {docx_error}",
         "mail_status": mail_status,
         "project_expo_status": project_expo_status,
+        "uiux_design_status": uiux_status,
     }), 200
 
 
