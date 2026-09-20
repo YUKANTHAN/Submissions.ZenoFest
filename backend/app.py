@@ -162,9 +162,9 @@ def submit():
         app.logger.exception("docx append failed")
         docx_error = str(exc)
 
-    # 3) Email the team their own branded PDF.
+    # 3) Email the team their own branded PDF (only for Project Expo).
     mail_status = "not_configured"
-    if mailer.is_configured():
+    if mailer.is_configured() and tech_event == "Project Expo":
         try:
             pdf_bytes = pdf_builder.build_submission_pdf({
                 "team_id": team_id,
@@ -191,6 +191,8 @@ def submit():
         except Exception as exc:
             app.logger.exception("email send failed")
             mail_status = f"failed: {exc}"
+    elif tech_event != "Project Expo":
+        mail_status = "skipped_not_project_expo"
 
     # 4) Notify organizer about unauthorized submissions.
     if is_unverified and mailer.is_configured():
