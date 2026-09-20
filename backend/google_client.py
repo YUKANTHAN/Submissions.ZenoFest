@@ -140,8 +140,18 @@ def _docx_exists(docx_file_id):
 
 def _download_docx(docx_file_id):
     drive = get_drive_service()
-    request = drive.files().get_media(fileId=docx_file_id)
+    # Check if it's a Google Doc (needs export) or .docx file
+    file_info = drive.files().get(fileId=docx_file_id, fields="mimeType").execute()
+    mime_type = file_info.get("mimeType", "")
+    
     buffer = io.BytesIO()
+    if mime_type == "application/vnd.google-apps.document":
+        # Export Google Doc as .docx
+        request = drive.files().export_media(fileId=docx_file_id, mimeType=DOCX_MIME)
+    else:
+        # Download .docx directly
+        request = drive.files().get_media(fileId=docx_file_id)
+    
     downloader = MediaIoBaseDownload(buffer, request)
     done = False
     while not done:
