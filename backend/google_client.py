@@ -31,8 +31,10 @@ UIUX_DESIGN_SHEET_ID = os.environ.get("UIUX_DESIGN_SHEET_ID", "").strip()
 UIUX_DESIGN_TAB_NAME = os.environ.get("UIUX_DESIGN_TAB_NAME", "Sheet1").strip()
 DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "").strip()
 DRIVE_DOCX_FILE_ID = os.environ.get("DRIVE_DOCX_FILE_ID", "").strip()
+UIUX_DOCX_FILE_ID = os.environ.get("UIUX_DOCX_FILE_ID", "").strip()
 
 DEFAULT_DOCX_NAME = "ZenoFest2026_EventSubmissions.docx"
+UIUX_DOCX_NAME = "ZenoFest2026_UIUXDesignSubmissions.docx"
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 # Write service account JSON to file once at module load if provided via env var
@@ -129,17 +131,16 @@ def find_team_by_email(email):
 
 
 # ---------------------------------------------------------------------------
-# Drive: DOCX read/write
+# Drive: DOCX read/write (generic)
 # ---------------------------------------------------------------------------
 
-def docx_exists():
-    return bool(DRIVE_DOCX_FILE_ID)
+def _docx_exists(docx_file_id):
+    return bool(docx_file_id)
 
 
-def download_docx():
-    """Return the DOCX bytes from Drive (raises HttpError if it doesn't exist)."""
+def _download_docx(docx_file_id):
     drive = get_drive_service()
-    request = drive.files().get_media(fileId=DRIVE_DOCX_FILE_ID)
+    request = drive.files().get_media(fileId=docx_file_id)
     buffer = io.BytesIO()
     downloader = MediaIoBaseDownload(buffer, request)
     done = False
@@ -148,25 +149,22 @@ def download_docx():
     return buffer.getvalue()
 
 
-def upload_docx(docx_bytes):
-    """Overwrite the existing DOCX with new content. Returns the file id."""
+def _upload_docx(docx_bytes, docx_file_id):
     drive = get_drive_service()
     media = MediaIoBaseUpload(io.BytesIO(docx_bytes), mimetype=DOCX_MIME, resumable=False)
     drive.files().update(
-        fileId=DRIVE_DOCX_FILE_ID,
+        fileId=docx_file_id,
         media_body=media,
         supportsAllDrives=True,
     ).execute()
-    return DRIVE_DOCX_FILE_ID
+    return docx_file_id
 
 
-def create_docx(docx_bytes):
-    """Create a new DOCX file (in DRIVE_FOLDER_ID if set, else the service
-    account's own Drive). Returns the new file id."""
+def _create_docx(docx_bytes, docx_name):
     drive = get_drive_service()
     media = MediaIoBaseUpload(io.BytesIO(docx_bytes), mimetype=DOCX_MIME, resumable=False)
     body = {
-        "name": DEFAULT_DOCX_NAME,
+        "name": docx_name,
         "mimeType": DOCX_MIME,
     }
     if DRIVE_FOLDER_ID:
@@ -179,11 +177,41 @@ def create_docx(docx_bytes):
     return file_.get("id")
 
 
+def _save_docx(docx_bytes, docx_file_id, docx_name):
+    if _docx_exists(docx_file_id):
+        return _upload_docx(docx_bytes, docx_file_id)
+    return _create_docx(docx_bytes, docx_name)
+
+
+# Public wrappers for each event type
+def docx_exists():
+    """Check if main Event Submissions DOCX exists."""
+    return _docx_exists(DRIVE_DOCX_FILE_ID)
+
+
+def download_docx():
+    """Download main Event Submissions DOCX."""
+    return _download_docx(DRIVE_DOCX_FILE_ID)
+
+
 def save_docx(docx_bytes):
-    """Create or update the DOCX on Drive. Returns the file id."""
-    if docx_exists():
-        return upload_docx(docx_bytes)
-    return create_docx(docx_bytes)
+    """Save to main Event Submissions DOCX."""
+    return _save_docx(docx_bytes, DRIVE_DOCX_FILE_ID, DEFAULT_DOCX_NAME)
+
+
+def uiux_docx_exists():
+    """Check if UI/UX Design DOCX exists."""
+    return _docx_exists(UIUX_DOCX_FILE_ID)
+
+
+def uiux_download_docx():
+    """Download UI/UX Design DOCX."""
+    return _download_docx(UIUX_DOCX_FILE_ID)
+
+
+def uiux_save_docx(docx_bytes):
+    """Save to UI/UX Design DOCX."""
+    return _save_docx(docx_bytes, UIUX_DOCX_FILE_ID, UIUX_DOCX_NAME)
 
 
 # ---------------------------------------------------------------------------

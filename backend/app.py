@@ -136,9 +136,15 @@ def submit():
     # 2) Append to the branded DOCX on Drive.
     docx_error = None
     try:
+        # Choose the correct DOCX based on event
+        is_uiux = tech_event == "UI/UX Design using Figma"
+        docx_exists_fn = gc.uiux_docx_exists if is_uiux else gc.docx_exists
+        download_docx_fn = gc.uiux_download_docx if is_uiux else gc.download_docx
+        save_docx_fn = gc.uiux_save_docx if is_uiux else gc.save_docx
+
         existing = None
-        if gc.docx_exists():
-            existing = gc.download_docx()
+        if docx_exists_fn():
+            existing = download_docx_fn()
         labels = {f["name"]: f["label"] for f in fields}
         new_bytes = docx_builder.append_submission(existing, {
             "team_id": team_id,
@@ -151,7 +157,7 @@ def submit():
             "form_data": form_data,
             "field_labels": labels,
         })
-        gc.save_docx(new_bytes)
+        save_docx_fn(new_bytes)
     except Exception as exc:
         app.logger.exception("docx append failed")
         docx_error = str(exc)
