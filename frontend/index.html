@@ -179,6 +179,13 @@
   }
   .links-group .icon-btn:hover { border-color: var(--cyan); background: rgba(0,145,234,.1); }
   .links-group .icon-btn.delete:hover { border-color: #f44336; background: rgba(244,67,54,.1); color: #ff8a80; }
+  .spam-notice {
+    margin-top: 16px; padding: 14px 18px; border-radius: 10px;
+    background: rgba(255,152,0,.12); border: 1px solid #ff9800; color: #ffcc80;
+    font-size: 14px; line-height: 1.6; text-align: center;
+  }
+  .spam-notice a { color: #ffcc80; font-weight: 600; text-decoration: underline; }
+  .spam-notice a:hover { color: #fff; }
 </style>
 </head>
 <body>
@@ -229,6 +236,7 @@
     <!-- Success -->
     <section id="step-success" class="step">
       <div class="msg success" id="success-msg" style="display:block;"></div>
+      <div class="spam-notice" id="spam-notice" style="display:none;"></div>
       <button class="btn" id="btn-another" style="background: linear-gradient(90deg,#444,#666);">Submit for Another Team</button>
     </section>
     </div>
@@ -615,10 +623,16 @@
       const mailNote = data.mail_status === "sent" ? " A confirmation PDF has been emailed to you." : "";
       // Build spam folder link based on email domain
       const spamLink = buildSpamFolderLink(email);
-      const spamNote = spamLink 
-        ? ` If you don't see the email, <a href="${spamLink}" target="_blank" rel="noopener">check your spam folder</a>.` 
-        : " If you don't see the email, check your spam folder.";
+      const spamNotice = $("spam-notice");
+      if (spamLink) {
+        spamNotice.innerHTML = `⚠ If you don't see the confirmation email, <a href="${spamLink}" target="_blank" rel="noopener">check your spam folder</a>.`;
+        spamNotice.style.display = "block";
+      } else {
+        spamNotice.textContent = "If you don't see the confirmation email, check your spam folder.";
+        spamNotice.style.display = "block";
+      }
       $("success-msg").innerHTML =
+        `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}`;
         `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}${spamNote}`;
       showStep("success");
     } catch (err) {
@@ -657,6 +671,7 @@
     $("team-badges").innerHTML = "";
     $("verified-badge").classList.remove("show", "not-verified");
     $("unauth-note").classList.remove("show");
+    $("spam-notice").style.display = "none";
     populateEventDropdown();
     buildForm();
     showStep("form");
