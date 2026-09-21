@@ -11,7 +11,6 @@ Additional Links are rendered as a table.
 import io
 import json
 from datetime import datetime
-from xml.sax.saxutils import escape as _xml_escape
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.colors import HexColor
@@ -49,16 +48,11 @@ def _styles():
     }
 
 
-def _esc(v):
-    """Escape a value for safe inclusion in ReportLab Paragraph markup."""
-    return _xml_escape(str(v))
-
-
 def _cell(label, value, st):
     """One cell of the invisible table = 'Label: value'."""
     return Paragraph(
-        f'<font color="#6A0DAD"><b>{_esc(label)}</b></font>:&nbsp;'
-        f'<font color="#333333">{_esc(value)}</font>',
+        f'<font color="#6A0DAD"><b>{label}</b></font>:&nbsp;'
+        f'<font color="#333333">{value}</font>',
         st["cell_value"])
 
 
@@ -83,10 +77,9 @@ def _build_links_table(links, st):
     table_data = [[Paragraph('<b><font color="#0091EA">Label</font></b>', st["cell_value"]),
                    Paragraph('<b><font color="#0091EA">URL</font></b>', st["cell_value"])]]
     for label, url in links:
-        esc_url = _esc(url)
         table_data.append([
-            Paragraph(f'<font color="#333333">{_esc(label)}</font>', st["cell_value"]),
-            Paragraph(f'<font color="#0091EA"><a href="{esc_url}">{esc_url}</a></font>', st["cell_value"]),
+            Paragraph(f'<font color="#333333">{label}</font>', st["cell_value"]),
+            Paragraph(f'<font color="#0091EA"><a href="{url}">{url}</a></font>', st["cell_value"]),
         ])
     table = Table(table_data, colWidths=[55 * mm, 100 * mm])
     table.setStyle(TableStyle([
@@ -163,13 +156,13 @@ def build_submission_pdf(submission):
             if links:
                 link_table = _build_links_table(links, st)
                 if link_table:
-                    story.append(Paragraph(f'<b><font color="#0091EA">{_esc(label)}</font>:</b>', st["field_value"]))
+                    story.append(Paragraph(f'<b><font color="#0091EA">{label}</font>:</b>', st["field_value"]))
                     story.append(Spacer(1, 3))
                     story.append(link_table)
                     story.append(Spacer(1, 6))
                     continue
-        story.append(Paragraph(f'<b><font color="#0091EA">{_esc(label)}</font>:</b>&nbsp;'
-                               f'<font color="#333333">{_esc(value)}</font>',
+        story.append(Paragraph(f'<b><font color="#0091EA">{label}</font>:</b>&nbsp;'
+                               f'<font color="#333333">{value}</font>',
                                st["field_value"]))
         story.append(Spacer(1, 3))
 

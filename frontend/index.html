@@ -216,7 +216,7 @@
       <section id="step-form" class="step active">
       <label for="email">Email Address</label>
       <div class="email-wrap">
-        <input type="email" id="email" autocomplete="email">
+        <input type="email" id="email" value="pgyukanthan@gmail.com" autocomplete="email">
         <span class="verified-badge" id="verified-badge">
           <svg id="verified-icon" viewBox="0 0 24 24" fill="#4caf50"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
           <span id="verified-text">Verified</span>
@@ -332,8 +332,17 @@
     } catch (e) { console.error("Failed to load events", e); }
   })();
 
-  // PPT template download — direct link to backend (server sends it as an attachment)
-  $("btn-download-ppt").href = API_BASE + "/api/ppt-template";
+  // PPT template download — fetch from backend
+  (async () => {
+    try {
+      const res = await fetch(API_BASE + "/api/ppt-template");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        $("btn-download-ppt").href = url;
+      }
+    } catch (e) { console.error("PPT template fetch failed", e); }
+  })();
 
   function populateEventDropdown(preselect) {
     const sel = $("event-pick");
@@ -624,6 +633,7 @@
       }
       $("success-msg").innerHTML =
         `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}`;
+        `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}${spamNote}`;
       showStep("success");
     } catch (err) {
       $("form-msg").textContent = "Network error. Please try again.";
