@@ -275,7 +275,7 @@ def submit():
 def ppt_template():
     """Download the PPT template for Project Expo."""
     from flask import send_file
-    ppt_path = os.path.join(os.path.dirname(__file__), "..", "Project_expo_template_ppt.pptx")
+    ppt_path = os.path.join(os.path.dirname(__file__), "Project_expo_template_ppt.pptx")
     ppt_path = os.path.normpath(ppt_path)
     if not os.path.exists(ppt_path):
         return jsonify({"ok": False, "error": "PPT template not found"}), 404
