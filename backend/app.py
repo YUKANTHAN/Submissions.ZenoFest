@@ -15,7 +15,7 @@ import json
 from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 import events as events_mod
@@ -32,38 +32,15 @@ FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 app = Flask(__name__, static_folder=None)
 CORS(app)
 
-EVENT_DEFS_MARKER = "<!--EVENT_DEFS_INJECT-->"
-
-
-def _serve_frontend_html():
-    """Serve index.html with the event definitions injected inline and
-    no-store caching so the browser never shows a stale form."""
-    path = os.path.normpath(os.path.join(FRONTEND_DIR, "index.html"))
-    try:
-        with open(path, encoding="utf-8") as fh:
-            html = fh.read()
-    except OSError:
-        return jsonify({"ok": False, "error": "frontend missing"}), 500
-
-    if EVENT_DEFS_MARKER in html:
-        injection = "<script>window.EVENT_DEFS = " + json.dumps(events_mod.get_all_events()) + ";</script>"
-        html = html.replace(EVENT_DEFS_MARKER, injection)
-
-    resp = Response(html, mimetype="text/html; charset=utf-8")
-    resp.headers["Cache-Control"] = "no-store"
-    return resp
-
 
 @app.get("/")
 def index():
-    return _serve_frontend_html()
+    return send_from_directory(FRONTEND_DIR, "index.html")
 
 
 @app.get("/<path:filename>")
 def static_files(filename):
-    resp = send_from_directory(FRONTEND_DIR, filename)
-    resp.headers["Cache-Control"] = "no-store"
-    return resp
+    return send_from_directory(FRONTEND_DIR, filename)
 
 
 @app.get("/events")
