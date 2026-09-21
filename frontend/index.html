@@ -332,17 +332,8 @@
     } catch (e) { console.error("Failed to load events", e); }
   })();
 
-  // PPT template download — fetch from backend
-  (async () => {
-    try {
-      const res = await fetch(API_BASE + "/api/ppt-template");
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        $("btn-download-ppt").href = url;
-      }
-    } catch (e) { console.error("PPT template fetch failed", e); }
-  })();
+  // PPT template download — direct link to backend (server sends it as an attachment)
+  $("btn-download-ppt").href = API_BASE + "/api/ppt-template";
 
   function populateEventDropdown(preselect) {
     const sel = $("event-pick");
