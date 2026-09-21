@@ -260,7 +260,6 @@
   </div>
 
 <script src="config.js"></script>
-<!--EVENT_DEFS_INJECT-->
 <script>
   // Spiral loader animation
   (function() {
@@ -314,7 +313,7 @@
 
   const $ = (id) => document.getElementById(id);
   let currentTeam = null;
-  let allEvents = window.EVENT_DEFS || {};
+  let allEvents = {};
   let verifiedTeam = null;
 
   function showStep(name) {
@@ -322,10 +321,16 @@
     $("step-" + name).classList.add("active");
   }
 
-  // Events are embedded server-side; render immediately with no fetch wait.
-  $("step-loading").classList.remove("active");
-  $("main-content").style.display = "";
-  populateEventDropdown();
+  // Load events
+  (async () => {
+    try {
+      const res = await fetch(API_BASE + "/events");
+      allEvents = await res.json();
+      populateEventDropdown();
+      $("step-loading").classList.remove("active");
+      $("main-content").style.display = "";
+    } catch (e) { console.error("Failed to load events", e); }
+  })();
 
   // PPT template download — direct link to backend (server sends it as an attachment)
   $("btn-download-ppt").href = API_BASE + "/api/ppt-template";
