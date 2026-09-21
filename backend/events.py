@@ -30,12 +30,10 @@ EVENT_FIELDS = {
         {"name": "additional_links", "label": "Additional Links", "type": "links", "required": False, "hint": "UI/UX Design Link"},
     ],
     "UI/UX Design using Figma": [
+        {"name": "problem_statement", "label": "Problem Statement", "type": "textarea", "required": True, "max_length": 10000},
         {"name": "project_title", "label": "Project Title", "type": "text", "required": True},
-        {"name": "figma_link", "label": "Figma Prototype Link", "type": "url", "required": True, "placeholder": "https://www.figma.com/proto/..."},
         {"name": "short_description", "label": "Short Project Description", "type": "textarea", "required": True, "max_length": 5000},
-        {"name": "target_users", "label": "Target Users", "type": "text", "required": False},
-        {"name": "key_features", "label": "Key Features / Screens", "type": "textarea", "required": False, "max_length": 5000},
-        {"name": "additional_links", "label": "Additional Links", "type": "links", "required": False, "hint": "Research / References Link"},
+        {"name": "figma_link", "label": "Figma Prototype Link", "type": "url", "required": True, "placeholder": "https://www.figma.com/proto/..."},
     ],
 }
 

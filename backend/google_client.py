@@ -323,12 +323,10 @@ UIUX_DESIGN_HEADERS = [
     "Team ID",
     "Team Name",
     "Leader Name",
+    "Problem Statement",
     "Project Title",
-    "Figma Prototype Link",
     "Short Description",
-    "Target Users",
-    "Key Features / Screens",
-    "Additional Links",
+    "Figma Prototype Link",
     "Submitted At",
     "Email",
 ]
@@ -350,7 +348,7 @@ def append_uiux_design_submission(submission):
     Append a UI/UX Design submission to the tracking spreadsheet.
     `submission` dict should contain:
         team_id, team_name, tech_event, leader_name, college, email, submitted_at,
-        form_data (dict with project_title, figma_link, short_description, target_users, key_features, additional_links)
+        form_data (dict with problem_statement, project_title, short_description, figma_link)
     Returns True if successful, False otherwise.
     """
     if not UIUX_DESIGN_SHEET_ID:
@@ -373,12 +371,10 @@ def append_uiux_design_submission(submission):
             submission.get("team_id", ""),          # Team ID
             submission.get("team_name", ""),        # Team Name
             submission.get("leader_name", ""),      # Leader Name
+            form_data.get("problem_statement", ""), # Problem Statement
             form_data.get("project_title", ""),     # Project Title
-            form_data.get("figma_link", ""),        # Figma Prototype Link
             form_data.get("short_description", ""), # Short Description
-            form_data.get("target_users", ""),      # Target Users
-            form_data.get("key_features", ""),      # Key Features / Screens
-            _format_additional_links(form_data),    # Additional Links
+            form_data.get("figma_link", ""),        # Figma Prototype Link
             submission.get("submitted_at", ""),     # Submitted At
             submission.get("email", ""),            # Email
         ]
