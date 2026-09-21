@@ -13,7 +13,7 @@ Add a new event by appending to EVENT_FIELDS:
 
 EVENT_FIELDS = {
     "Project Expo": [
-        {"name": "submission_method", "label": "How will you submit the PPT and Abstract?", "type": "radio", "options": ["Google Drive Link", "Email"], "required": True},
+        {"name": "submission_method", "label": "How will you submit the PPT and Abstract?", "type": "radio", "options": ["Email", "Google Drive Link"], "required": True},
         {"name": "project_title", "label": "Project Title", "type": "text", "required": True},
         {"name": "github_url", "label": "GitHub Project URL (Optional)", "type": "url", "required": False, "placeholder": "https://github.com/username/repo"},
         {"name": "abstract_link", "label": "Abstract (Google Drive DOCX Link)", "type": "url", "required": False, "placeholder": "https://drive.google.com/file/d/your-file-id/view", "depends_on": {"field": "submission_method", "value": "Google Drive Link"}},
