@@ -186,6 +186,22 @@
   }
   .spam-notice a { color: #ffcc80; font-weight: 600; text-decoration: underline; }
   .spam-notice a:hover { color: #fff; }
+  .mail-template {
+    display: none; margin-top: 14px; padding: 16px 18px;
+    border: 1px solid var(--cyan); border-radius: 12px;
+    background: rgba(0,145,234,.08); color: var(--text);
+  }
+  .mail-template.mt-show { display: block; }
+  .mt-title { font-size: 15px; font-weight: 700; color: var(--cyan); margin-bottom: 8px; }
+  .mt-desc { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.6; }
+  .mt-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 2px; border-bottom: 1px dashed rgba(255,255,255,.12);
+    font-size: 13.5px;
+  }
+  .mt-row span { color: var(--muted); }
+  .mt-row b { color: var(--text); text-align: right; }
+  .mt-note { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -382,6 +398,8 @@
           if (data.team.tech_event && allEvents[data.team.tech_event]) {
             $("event-pick").value = data.team.tech_event;
           }
+          updateMailTemplate(data.team);
+          applyFieldVisibility();
           const badges = [];
           if (data.team.team_id) badges.push(`<span class="pill purple">${data.team.team_id}</span>`);
           if (data.team.team_name) badges.push(`<span class="pill">${data.team.team_name}</span>`);
@@ -410,6 +428,11 @@
     buildForm();
   });
 
+  // Radio change (e.g. submission method) — show/hide dependent fields
+  $("form-fields").addEventListener("change", (e) => {
+    if (e.target && e.target.type === "radio") applyFieldVisibility();
+  });
+
   function buildForm() {
     const eventPick = $("event-pick").value;
     const fields = allEvents[eventPick] || [];
@@ -432,6 +455,20 @@
         `;
         wrap.appendChild(container);
         addLinkRow(f.name, f.hint || "Link");
+      } else if (f.type === "mail_template") {
+        const box = document.createElement("div");
+        box.className = "mail-template";
+        box.id = "mail-template-box";
+        box.innerHTML = `
+          <div class="mt-title">Email your PPT &amp; Abstract</div>
+          <div class="mt-desc">Send your PPT and Abstract files to the ZenoFest team by email, along with these details:</div>
+          <div class="mt-row"><span>Team ID</span><b id="mt-team-id">&mdash;</b></div>
+          <div class="mt-row"><span>Team Name</span><b id="mt-team-name">&mdash;</b></div>
+          <div class="mt-row"><span>Leader Name</span><b id="mt-leader">&mdash;</b></div>
+          <div class="mt-row"><span>College</span><b id="mt-college">&mdash;</b></div>
+          <div class="mt-note">After emailing the files, submit this form to record your entry.</div>
+        `;
+        wrap.appendChild(box);
       } else {
         const label = `<label for="${f.name}">${f.label}${f.required ? ' <span class="required-star">*</span>' : ""}${f.max_length ? ` <span class="charcount" id="count-${f.name}"></span>` : ""}</label>`;
         let input;
@@ -447,14 +484,48 @@
           const ph = f.placeholder ? ` placeholder="${f.placeholder}"` : '';
           input = `<input type="${f.type === "url" ? "url" : "text"}" id="${f.name}" name="${f.name}" required="${f.required}"${ph}>`;
         }
-        wrap.insertAdjacentHTML("beforeend", label + input);
+        if (f.depends_on) {
+          wrap.insertAdjacentHTML("beforeend",
+            `<div data-depends-field="${f.depends_on.field}" data-depends-value="${f.depends_on.value}">${label}${input}</div>`);
+        } else {
+          wrap.insertAdjacentHTML("beforeend", label + input);
+        }
       }
     });
     document.querySelectorAll("#form-fields textarea").forEach(t => {
       t.dispatchEvent(new Event("input"));
     });
+    applyFieldVisibility();
     $("form-msg").className = "msg";
     $("form-msg").textContent = "";
+  }
+
+  function currentSubmissionMethod() {
+    const el = document.querySelector('#form-fields input[name="submission_method"]:checked');
+    return el ? el.value : "";
+  }
+
+  function updateMailTemplate(team) {
+    const t = team || verifiedTeam || {};
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = (v && String(v).trim()) ? v : "—"; };
+    set("mt-team-id", t.team_id);
+    set("mt-team-name", t.team_name);
+    set("mt-leader", t.leader_name);
+    set("mt-college", t.college);
+  }
+
+  function applyFieldVisibility() {
+    const method = currentSubmissionMethod();
+    document.querySelectorAll("#form-fields [data-depends-field]").forEach(div => {
+      const match = div.dataset.dependsField === "submission_method" && div.dataset.dependsValue === method;
+      div.style.display = match ? "" : "none";
+      if (!match) {
+        div.querySelectorAll("input, textarea").forEach(i => { i.value = ""; i.removeAttribute("required"); });
+      }
+    });
+    const box = $("mail-template-box");
+    if (box) box.classList.toggle("mt-show", method === "Email");
+    updateMailTemplate();
   }
 
   function addLinkRow(groupName, hint) {
@@ -551,6 +622,15 @@
         if (!el || !el.value.trim()) missing.push(f.label);
       }
     });
+    // Conditional requirements (e.g. Drive-link fields required only when that method is chosen)
+    if (formData.submission_method === "Google Drive Link") {
+      fields.forEach(f => {
+        if (f.depends_on && f.depends_on.value === formData.submission_method) {
+          const el = document.getElementById(f.name);
+          if (!el || !el.value.trim()) missing.push(f.label);
+        }
+      });
+    }
     if (missing.length) {
       $("form-msg").textContent = "Missing required fields: " + missing.join(", ");
       $("form-msg").classList.add("error");

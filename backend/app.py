@@ -98,6 +98,21 @@ def submit():
 
     # Basic required-field validation against the event definition.
     missing = [f["label"] for f in fields if f.get("required") and not str(form_data.get(f["name"], "")).strip()]
+
+    # Fields that depend on the submission method: the Drive-link fields are
+    # required only when the participant chose the "Google Drive Link" method.
+    method = str(form_data.get("submission_method", "")).strip()
+    if method == "Google Drive Link":
+        for f in fields:
+            dep = f.get("depends_on") or {}
+            if dep.get("value") == "Google Drive Link" and not str(form_data.get(f["name"], "")).strip():
+                missing.append(f["label"])
+
+    # If they chose Email, record in PDF/DOCX/sheet that files come by mail.
+    if method == "Email":
+        form_data.setdefault("abstract_link", "Will be submitted via email")
+        form_data.setdefault("ppt_link", "Will be submitted via email")
+
     if missing:
         return jsonify({"ok": False, "error": "Missing required fields: " + ", ".join(missing)}), 400
 
