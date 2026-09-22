@@ -455,12 +455,12 @@
         `;
         wrap.appendChild(container);
         addLinkRow(f.name, f.hint || "Link");
-      } else if (f.type === "mail_template") {
+} else if (f.type === "mail_template") {
         const box = document.createElement("div");
         box.className = "mail-template";
         box.id = "mail-template-box";
         box.innerHTML = `
-          <div class="mt-title">Email your PPT &amp; Abstract</div>
+          <div class="mt-title">Email your PPT & Abstract</div>
           <div class="mt-desc">Send your PPT and Abstract files to <b>zenofest@gmail.com</b>, along with these details:</div>
           <div class="mt-row"><span>Mail to</span><b>zenofest@gmail.com</b></div>
           <div class="mt-row"><span>Team ID</span><b id="mt-team-id">&mdash;</b></div>
