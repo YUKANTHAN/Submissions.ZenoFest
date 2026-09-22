@@ -721,7 +721,6 @@
       }
       $("success-msg").innerHTML =
         `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}`;
-        `Submission recorded! Reference ID: ${data.submission_id}.${docxNote}${mailNote}${spamNote}`;
       showStep("success");
     } catch (err) {
       $("form-msg").textContent = "Network error. Please try again.";
