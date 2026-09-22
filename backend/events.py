@@ -18,6 +18,7 @@ EVENT_FIELDS = {
         {"name": "github_url", "label": "GitHub Project URL (Optional)", "type": "url", "required": False, "placeholder": "https://github.com/username/repo"},
         {"name": "abstract_link", "label": "Abstract (Google Drive DOCX Link)", "type": "url", "required": False, "placeholder": "https://drive.google.com/file/d/your-file-id/view", "depends_on": {"field": "submission_method", "value": "Google Drive Link"}},
         {"name": "ppt_link", "label": "PPT (Google Drive Link)", "type": "url", "required": False, "placeholder": "https://drive.google.com/file/d/your-file-id/view", "depends_on": {"field": "submission_method", "value": "Google Drive Link"}},
+        {"name": "drive_instructions", "label": "", "type": "drive_template", "required": False},
         {"name": "mail_instructions", "label": "", "type": "mail_template", "required": False},
         {"name": "development_domain", "label": "Development Domain", "type": "radio", "options": ["Software", "Hardware", "Hybrid (Hardware + Software)"], "required": True},
         {"name": "problem_statement", "label": "Problem Statement", "type": "textarea", "required": True, "max_length": 10000},

@@ -470,6 +470,20 @@
           <div class="mt-note">After emailing the files, submit this form to record your entry.</div>
         `;
         wrap.appendChild(box);
+      } else if (f.type === "drive_template") {
+        const box = document.createElement("div");
+        box.className = "mail-template";
+        box.id = "drive-template-box";
+        box.innerHTML = `
+          <div class="mt-title">Share your PPT &amp; Abstract via Google Drive</div>
+          <div class="mt-desc">Upload your files to Google Drive, change each file's access to <b>Anyone with the link</b>, then paste the share links in the fields below.</div>
+          <div class="mt-row"><span>Sharing access</span><b>Anyone with the link</b></div>
+          <div class="mt-row"><span>Permission</span><b>Viewer</b></div>
+          <div class="mt-row"><span>Abstract</span><b>DOCX / PDF share link</b></div>
+          <div class="mt-row"><span>PPT</span><b>Share link</b></div>
+          <div class="mt-note">After sharing the files, submit this form to record your entry.</div>
+        `;
+        wrap.appendChild(box);
       } else {
         const label = `<label for="${f.name}">${f.label}${f.required ? ' <span class="required-star">*</span>' : ""}${f.max_length ? ` <span class="charcount" id="count-${f.name}"></span>` : ""}</label>`;
         let input;
@@ -526,6 +540,8 @@
     });
     const box = $("mail-template-box");
     if (box) box.classList.toggle("mt-show", method === "Email");
+    const dbox = $("drive-template-box");
+    if (dbox) dbox.classList.toggle("mt-show", method === "Google Drive Link");
     updateMailTemplate();
   }
 
